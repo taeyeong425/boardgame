@@ -1,6 +1,11 @@
 export type GameId = "penguin-party" | "skull-king" | "bluff" | "las-vegas";
 
-export type RoomPhase = "lobby" | "in-game" | "round-end";
+/**
+ * "game-over" is a brief intermission between a game finishing and the results screen: the
+ * game's own final board is still shown (frozen — no more moves), so players can see how the
+ * game actually played out before jumping to the rank/points breakdown in "round-end".
+ */
+export type RoomPhase = "lobby" | "in-game" | "game-over" | "round-end";
 
 export interface Player {
   id: string;

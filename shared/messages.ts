@@ -7,10 +7,11 @@ export type ClientMessage =
   | { type: "selectGame"; gameId: GameId } // host only
   | { type: "startGame" } // host only
   | { type: "gameAction"; action: unknown } // forwarded verbatim to the active GameModule.applyMove
-  | { type: "backToLobby" } // host only, after round-end
+  | { type: "backToLobby" } // host only, allowed from in-game, game-over, or round-end
   | { type: "kickPlayer"; playerId: string } // host only
   | { type: "transferHost"; playerId: string } // host only, lobby only
-  | { type: "changeNickname"; nickname: string }; // any player, about themselves, any phase
+  | { type: "changeNickname"; nickname: string } // any player, about themselves, any phase
+  | { type: "showResults" }; // any player, game-over -> round-end
 
 /**
  * `roomState` carries everything except `currentGameState`, which is stripped server-side

@@ -35,12 +35,7 @@ https://gamers-hq.de/media/pdf/36/1a/4e/PenguinParty_rule_KR_ol.pdf
   **1 round** regardless of player count — that single round's penalty total directly determines
   the game's rank/points. See `totalRounds = 1` in `games/penguin-party/engine/reducer.ts`.
 
-## Cross-game starting-player rule (platform-level, applies to every game not just this one)
-
-Who goes first in a game is a hint (`RoomState.nextStartingPlayerId`) the room passes to
-`GameModule.createInitialState(players, startingPlayerId?)`:
-- The very first game played in a fresh room has no prior winner, so it's picked randomly.
-- Every game after that starts with the **previous game's rank-1 winner** (ties broken by
-  earliest-joined). Set in `party/index.ts`'s `applyGameMove` right when a game ends.
+Everything else — who starts a game, scoring/points, the turn timer, host controls, nicknames,
+room phases — is generic platform behavior, not specific to this game. See `docs/PLATFORM.md`.
 
 Full implementation, engine + tests: `games/penguin-party/engine/`.

@@ -88,7 +88,9 @@ async function applyGameMove(
     const nextStartingPlayerId = playerIds.find((id) => entry.ranks[id] === 1) ?? null;
     next = {
       ...next,
-      phase: "round-end",
+      // Land on "game-over" first (final board still visible, frozen) — the client explicitly
+      // asks to move on to "round-end" (the rank/points breakdown) via showResults.
+      phase: "game-over",
       scoreLedger,
       totals: computeTotals(scoreLedger, playerIds),
       turnDeadline: null,
@@ -143,6 +145,8 @@ export default class BoardgameRoom implements Party.Server {
         return this.handleTransferHost(sender, parsed.playerId);
       case "changeNickname":
         return this.handleChangeNickname(sender, parsed.nickname);
+      case "showResults":
+        return this.handleShowResults(sender);
     }
   }
 
@@ -312,9 +316,10 @@ export default class BoardgameRoom implements Party.Server {
     const { state } = await this.requireHost(sender);
     if (!state) return;
 
-    // Allowed both after a round naturally ends AND mid-game, so the host can bail out of a game
-    // early (e.g. someone has to leave) — abandoning mid-game intentionally records no score entry.
-    if (state.phase !== "round-end" && state.phase !== "in-game") {
+    // Allowed after a round naturally ends, during the game-over intermission, and mid-game (so
+    // the host can bail out of a game early, e.g. someone has to leave) — abandoning mid-game
+    // intentionally records no score entry.
+    if (state.phase !== "round-end" && state.phase !== "game-over" && state.phase !== "in-game") {
       send(sender, { type: "error", code: "INVALID_STATE", message: "No game to leave right now." });
       return;
     }
@@ -365,6 +370,18 @@ export default class BoardgameRoom implements Party.Server {
     const state = await loadRoomState(this.room);
     if (!state || !state.players[cs.playerId]) return;
     const next = upsertPlayer(state, { ...state.players[cs.playerId], nickname: trimmed });
+    await saveRoomState(this.room, next);
+    broadcastPublicState(this.room, next);
+  }
+
+  private async handleShowResults(sender: Party.Connection) {
+    const cs = connState(sender);
+    if (!cs?.playerId) return;
+    const state = await loadRoomState(this.room);
+    if (!state || !state.players[cs.playerId]) return;
+
+    if (state.phase !== "game-over") return; // no-op if someone else already advanced it
+    const next: RoomState = { ...state, phase: "round-end" };
     await saveRoomState(this.room, next);
     broadcastPublicState(this.room, next);
   }

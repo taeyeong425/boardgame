@@ -7,7 +7,15 @@ import { LobbyScreen } from "../lobby/LobbyScreen";
 import { RoundEndScreen } from "./RoundEndScreen";
 import { TurnTimerBadge } from "./TurnTimerBadge";
 
-export function GameShell({ code, room }: { code: string; room: UseRoomSocketResult }) {
+export function GameShell({
+  code,
+  room,
+  onLeaveRoom,
+}: {
+  code: string;
+  room: UseRoomSocketResult;
+  onLeaveRoom: () => void;
+}) {
   const { publicState, gameState, selfPlayerId, status, lastError, sendMessage } = room;
 
   if (!publicState) {
@@ -26,6 +34,7 @@ export function GameShell({ code, room }: { code: string; room: UseRoomSocketRes
         status={status}
         lastError={lastError}
         sendMessage={sendMessage}
+        onLeaveRoom={onLeaveRoom}
       />
     );
   }
@@ -34,7 +43,7 @@ export function GameShell({ code, room }: { code: string; room: UseRoomSocketRes
     return <RoundEndScreen publicState={publicState} selfPlayerId={selfPlayerId} isHost={isHost} sendMessage={sendMessage} />;
   }
 
-  // phase === "in-game"
+  // phase === "in-game" or "game-over" — both render the game's own board (frozen once over)
   const GameComponent = publicState.currentGameId ? gameUiRegistry[publicState.currentGameId] : undefined;
   if (!GameComponent || gameState === null || gameState === undefined) {
     return <div className="flex min-h-dvh items-center justify-center text-white/60">게임 로딩 중...</div>;
@@ -64,6 +73,20 @@ export function GameShell({ code, room }: { code: string; room: UseRoomSocketRes
         </div>
         <TurnTimerBadge turnDeadline={publicState.turnDeadline} />
       </div>
+
+      {publicState.phase === "game-over" && (
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/10 p-3">
+          <p className="text-sm text-emerald-200">게임 종료! 결과로 넘어가기 전에 마지막 상황을 확인해보세요.</p>
+          <button
+            type="button"
+            onClick={() => sendMessage({ type: "showResults" })}
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white active:scale-95"
+          >
+            결과 보기
+          </button>
+        </div>
+      )}
+
       <GameComponent
         selfPlayerId={selfPlayerId}
         isHost={isHost}

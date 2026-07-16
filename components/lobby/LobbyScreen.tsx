@@ -14,6 +14,7 @@ export function LobbyScreen({
   status,
   lastError,
   sendMessage,
+  onLeaveRoom,
 }: {
   code: string;
   publicState: PublicRoomState;
@@ -22,8 +23,15 @@ export function LobbyScreen({
   status: ConnectionStatus;
   lastError: { code: string; message: string } | null;
   sendMessage: (message: ClientMessage) => void;
+  onLeaveRoom: () => void;
 }) {
   const players = Object.values(publicState.players);
+
+  function handleLeaveRoom() {
+    if (window.confirm("정말 이 방을 나갈까요? 다시 들어오려면 방 코드가 필요해요.")) {
+      onLeaveRoom();
+    }
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-10">
@@ -34,7 +42,16 @@ export function LobbyScreen({
           {status !== "open" && <p className="mt-1 text-xs text-amber-400">연결 상태: {status}</p>}
           {lastError && <p className="mt-1 text-xs text-red-400">{lastError.message}</p>}
         </div>
-        <NicknameEditButton currentNickname={publicState.players[selfPlayerId]?.nickname ?? ""} sendMessage={sendMessage} />
+        <div className="flex flex-col items-end gap-2">
+          <NicknameEditButton currentNickname={publicState.players[selfPlayerId]?.nickname ?? ""} sendMessage={sendMessage} />
+          <button
+            type="button"
+            onClick={handleLeaveRoom}
+            className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/60 active:scale-95"
+          >
+            방 나가기
+          </button>
+        </div>
       </div>
 
       <PlayerList
