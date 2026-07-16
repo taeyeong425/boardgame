@@ -39,15 +39,35 @@ export function GameShell({ code, room }: { code: string; room: UseRoomSocketRes
     return <div className="flex min-h-dvh items-center justify-center text-white/60">게임 로딩 중...</div>;
   }
 
+  function handleLeaveToLobby() {
+    if (window.confirm("정말 게임을 종료하고 로비로 돌아갈까요? 이번 게임 결과는 저장되지 않아요.")) {
+      sendMessage({ type: "backToLobby" });
+    }
+  }
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 px-3 py-4">
       {status !== "open" && <p className="text-center text-xs text-amber-400">연결 상태: {status}</p>}
-      <TurnTimerBadge turnDeadline={publicState.turnDeadline} />
+      <div className="flex items-center justify-between">
+        {isHost ? (
+          <button
+            type="button"
+            onClick={handleLeaveToLobby}
+            className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/60 active:scale-95"
+          >
+            로비로 나가기
+          </button>
+        ) : (
+          <span />
+        )}
+        <TurnTimerBadge turnDeadline={publicState.turnDeadline} />
+      </div>
       <GameComponent
         selfPlayerId={selfPlayerId}
         isHost={isHost}
         gameState={gameState}
         turnDeadline={publicState.turnDeadline}
+        roomTotals={publicState.totals}
         sendAction={(action) => sendMessage({ type: "gameAction", action })}
       />
     </div>

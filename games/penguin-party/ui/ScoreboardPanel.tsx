@@ -1,17 +1,22 @@
 export function ScoreboardPanel({
   players,
+  totals,
 }: {
-  players: { id: string; nickname: string; cumulativePenalty: number }[];
+  players: { id: string; nickname: string }[];
+  /** Room-wide cumulative points across every game played in this room (higher is better). */
+  totals: Record<string, number>;
 }) {
-  const sorted = [...players].sort((a, b) => a.cumulativePenalty - b.cumulativePenalty);
+  const sorted = [...players].sort((a, b) => (totals[b.id] ?? 0) - (totals[a.id] ?? 0));
   return (
     <div className="rounded-lg border border-white/10 p-3 text-sm">
-      <h3 className="mb-2 font-semibold text-white/70">이번 게임 누적 벌점 (낮을수록 좋음)</h3>
+      <h3 className="mb-2 font-semibold text-white/70">이 방 누적 순위</h3>
       <ol className="flex flex-col gap-1">
-        {sorted.map((p) => (
+        {sorted.map((p, i) => (
           <li key={p.id} className="flex justify-between">
-            <span>{p.nickname}</span>
-            <span>{p.cumulativePenalty}</span>
+            <span>
+              {i + 1}. {p.nickname}
+            </span>
+            <span>{totals[p.id] ?? 0}점</span>
           </li>
         ))}
       </ol>

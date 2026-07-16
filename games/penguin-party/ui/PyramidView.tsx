@@ -6,7 +6,9 @@ import type { CardColor, PyramidPosition, PyramidState } from "../engine/types";
 import { CardFace } from "./CardFace";
 import { cardColorHex } from "./cardColor";
 
-const CELL = 44; // px
+// Matches PlayerHand's card size so pyramid cards and hand cards read as the same "physical" card.
+const CELL_WIDTH = 40; // px
+const CELL_HEIGHT = 56; // px
 
 function positionKey(position: PyramidPosition): string {
   return `${position.layer}:${position.index}`;
@@ -47,18 +49,22 @@ export function PyramidView({
     };
   }, [occupied, legalPositions]);
 
-  const width = (bounds.maxX - bounds.minX) * CELL;
-  const height = (bounds.maxY - bounds.minY) * CELL;
+  const width = (bounds.maxX - bounds.minX) * CELL_WIDTH;
+  const height = (bounds.maxY - bounds.minY) * CELL_HEIGHT;
 
   return (
     <div className="w-full overflow-auto rounded-xl bg-slate-800/40 p-4">
       <div className="relative mx-auto" style={{ width, height }}>
         {occupied.map(({ position, card }) => {
           const u = unitsFor(position);
-          const left = (u.x - bounds.minX) * CELL - CELL / 2;
-          const top = (u.y - bounds.minY) * CELL - CELL / 2;
+          const left = (u.x - bounds.minX) * CELL_WIDTH - CELL_WIDTH / 2;
+          const top = (u.y - bounds.minY) * CELL_HEIGHT - CELL_HEIGHT / 2;
           return (
-            <div key={positionKey(position)} className="absolute" style={{ left, top, width: CELL - 4, height: CELL - 4 }}>
+            <div
+              key={positionKey(position)}
+              className="absolute"
+              style={{ left, top, width: CELL_WIDTH - 4, height: CELL_HEIGHT - 4 }}
+            >
               <CardFace color={card.color} />
             </div>
           );
@@ -66,13 +72,13 @@ export function PyramidView({
         {legalPositions.map((lp) => {
           const key = positionKey(lp.position);
           const u = unitsFor(lp.position);
-          const left = (u.x - bounds.minX) * CELL - CELL / 2;
-          const top = (u.y - bounds.minY) * CELL - CELL / 2;
+          const left = (u.x - bounds.minX) * CELL_WIDTH - CELL_WIDTH / 2;
+          const top = (u.y - bounds.minY) * CELL_HEIGHT - CELL_HEIGHT / 2;
           const active = activeKeys.has(key);
           return (
             <EmptySlot
               key={key}
-              style={{ left, top, width: CELL - 4, height: CELL - 4 }}
+              style={{ left, top, width: CELL_WIDTH - 4, height: CELL_HEIGHT - 4 }}
               allowedColors={lp.allowedColors}
               active={active}
               onClick={() => onSelectPosition(lp.position)}

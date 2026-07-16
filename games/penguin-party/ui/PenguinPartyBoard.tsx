@@ -12,7 +12,7 @@ import { RoundResultOverlay } from "./RoundResultOverlay";
 import { ScoreboardPanel } from "./ScoreboardPanel";
 import { cardColorLabel } from "./cardColor";
 
-export function PenguinPartyGame({ selfPlayerId, gameState, sendAction }: GameComponentProps) {
+export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
   const state = gameState as PenguinPartyClientState;
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
@@ -84,7 +84,7 @@ export function PenguinPartyGame({ selfPlayerId, gameState, sendAction }: GameCo
         onSelectCard={(id) => setSelectedCardId((cur) => (cur === id ? null : id))}
       />
 
-      <ScoreboardPanel players={state.players} />
+      <ScoreboardPanel players={state.players} totals={roomTotals} />
     </div>
   );
 }

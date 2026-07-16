@@ -298,10 +298,13 @@ export default class BoardgameRoom implements Party.Server {
     const { state } = await this.requireHost(sender);
     if (!state) return;
 
-    if (state.phase !== "round-end") {
-      send(sender, { type: "error", code: "INVALID_STATE", message: "The current round hasn't ended yet." });
+    // Allowed both after a round naturally ends AND mid-game, so the host can bail out of a game
+    // early (e.g. someone has to leave) — abandoning mid-game intentionally records no score entry.
+    if (state.phase !== "round-end" && state.phase !== "in-game") {
+      send(sender, { type: "error", code: "INVALID_STATE", message: "No game to leave right now." });
       return;
     }
+    if (state.phase === "in-game") await clearTurnAlarm(this.room);
     const next: RoomState = { ...state, phase: "lobby", currentGameId: null, currentGameState: null, turnDeadline: null };
     await saveRoomState(this.room, next);
     broadcastPublicState(this.room, next);

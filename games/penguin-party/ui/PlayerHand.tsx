@@ -15,14 +15,16 @@ export function PlayerHand({
   onSelectCard: (cardId: string) => void;
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto p-2">
+    <div className="flex flex-wrap justify-center gap-1 p-2">
       {hand.map((card) => (
         <button
           key={card.id}
           type="button"
           disabled={!playable}
           onClick={() => onSelectCard(card.id)}
-          className={`h-20 w-14 shrink-0 rounded-md transition-transform ${
+          // Sized (~40x56, roughly 9 per mobile-width row) so a big hand stays readable by
+          // wrapping into multiple rows instead of one long horizontal scroll strip.
+          className={`h-14 w-10 shrink-0 rounded-md transition-transform ${
             selectedCardId === card.id ? "-translate-y-2 ring-2 ring-white" : ""
           } ${playable ? "active:scale-95" : "opacity-40"}`}
         >

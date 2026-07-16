@@ -1,27 +1,18 @@
 import type { CardColor } from "../engine/types";
 import { cardColorGlyph, cardColorHex } from "./cardColor";
 
-/**
- * Fills its parent container completely — the parent controls size/aspect ratio (portrait for the
- * hand, roughly square for the tight pyramid grid), this just lays out corner indices + a center
- * pip proportionally like a real playing card.
- */
+/** Fills its parent container completely — the parent controls the (portrait, card-shaped) size. */
 export function CardFace({ color, dimmed }: { color: CardColor; dimmed?: boolean }) {
   const hex = cardColorHex(color);
   const glyph = cardColorGlyph(color);
   return (
     <div
-      className={`relative h-full w-full rounded-md border-2 border-white bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ${
+      className={`flex h-full w-full items-center justify-center rounded-md border-2 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] ${
         dimmed ? "opacity-50" : ""
       }`}
+      style={{ borderColor: hex }}
     >
-      <span className="absolute left-0.5 top-0 text-[11px] leading-tight">
-        {glyph}
-      </span>
-      <span className="absolute bottom-0 right-0.5 rotate-180 text-[11px] leading-tight">{glyph}</span>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="h-2/5 w-2/5 rounded-full ring-2 ring-black/10" style={{ backgroundColor: hex }} />
-      </div>
+      <span className="text-3xl leading-none">{glyph}</span>
     </div>
   );
 }
