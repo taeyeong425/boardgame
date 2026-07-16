@@ -77,15 +77,15 @@ describe("applyMove — elimination, last-card bonus, and round/game end (hand-b
         currentTurnIndex: 0,
         pyramid: {
           cells: {
-            "1:0": { card: { id: "b0", color: "sky" }, position: { layer: 1, index: 0 }, placedBy: "p0", turnNumber: 0 },
-            "1:1": { card: { id: "b1", color: "sky" }, position: { layer: 1, index: 1 }, placedBy: "p0", turnNumber: 0 },
+            "1:0": { card: { id: "b0", color: "ice" }, position: { layer: 1, index: 0 }, placedBy: "p0", turnNumber: 0 },
+            "1:1": { card: { id: "b1", color: "ice" }, position: { layer: 1, index: 1 }, placedBy: "p0", turnNumber: 0 },
           },
           layer1Range: { lo: 0, hi: 1 },
           layer1MaxWidth: 2, // full — no further layer-1 placements possible
         },
         hands: {
-          p0: [{ id: "p0card", color: "sky" }], // legal: matches the layer-2 gap's required color
-          p1: [{ id: "p1card", color: "yellow" }], // illegal everywhere — will be auto-eliminated
+          p0: [{ id: "p0card", color: "ice" }], // legal: matches the layer-2 gap's required color
+          p1: [{ id: "p1card", color: "desert" }], // illegal everywhere — will be auto-eliminated
         },
         eliminated: {},
         emptiedHand: {},
@@ -127,7 +127,7 @@ describe("applyMove — elimination, last-card bonus, and round/game end (hand-b
         turnOrder: ["p0", "p1"],
         currentTurnIndex: 0,
         pyramid: { cells: {}, layer1Range: null, layer1MaxWidth: 8 },
-        hands: { p0: [{ id: "last", color: "red" }], p1: [{ id: "still-has-one", color: "green" }] },
+        hands: { p0: [{ id: "last", color: "fire" }], p1: [{ id: "still-has-one", color: "tree" }] },
         eliminated: {},
         emptiedHand: {},
         revealedExtraCard: null,
@@ -157,8 +157,8 @@ describe("applyMove — elimination, last-card bonus, and round/game end (hand-b
         startingPlayerId: "p0",
         turnOrder: ["p0", "p1"],
         currentTurnIndex: 1,
-        pyramid: { cells: {}, layer1Range: { lo: 0, hi: 0 }, layer1MaxWidth: 7 },
-        hands: { p0: [], p1: [{ id: "final", color: "purple" }] },
+        pyramid: { cells: {}, layer1Range: { lo: 0, hi: 0 }, layer1MaxWidth: 8 },
+        hands: { p0: [], p1: [{ id: "final", color: "grape" }] },
         eliminated: {},
         emptiedHand: { p0: true },
         revealedExtraCard: null,
@@ -178,10 +178,10 @@ describe("applyMove — elimination, last-card bonus, and round/game end (hand-b
     expect(result.state.roundHistory).toHaveLength(1);
     expect(result.state.round.roundNumber).toBe(2);
     expect(result.state.round.startingPlayerId).toBe("p1"); // next after p0
-    // fresh 2-player deal: 14 cards each, layer1MaxWidth back to 7
-    expect(result.state.round.hands.p0).toHaveLength(14);
-    expect(result.state.round.hands.p1).toHaveLength(14);
-    expect(result.state.round.pyramid.layer1MaxWidth).toBe(7);
+    // fresh 2-player deal: full 36-card deck, 18 cards each, layer1MaxWidth stays 8
+    expect(result.state.round.hands.p0).toHaveLength(18);
+    expect(result.state.round.hands.p1).toHaveLength(18);
+    expect(result.state.round.pyramid.layer1MaxWidth).toBe(8);
   });
 });
 

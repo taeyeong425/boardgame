@@ -15,15 +15,10 @@ export function CardFace({ color, dimmed }: { color: CardColor; dimmed?: boolean
         dimmed ? "opacity-50" : ""
       }`}
     >
-      <span className="absolute left-0.5 top-0 text-[9px] font-extrabold leading-tight" style={{ color: hex }}>
+      <span className="absolute left-0.5 top-0 text-[11px] leading-tight">
         {glyph}
       </span>
-      <span
-        className="absolute bottom-0 right-0.5 rotate-180 text-[9px] font-extrabold leading-tight"
-        style={{ color: hex }}
-      >
-        {glyph}
-      </span>
+      <span className="absolute bottom-0 right-0.5 rotate-180 text-[11px] leading-tight">{glyph}</span>
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="h-2/5 w-2/5 rounded-full ring-2 ring-black/10" style={{ backgroundColor: hex }} />
       </div>

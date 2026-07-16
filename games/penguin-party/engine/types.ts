@@ -1,4 +1,6 @@
-export type CardColor = "red" | "green" | "yellow" | "purple" | "sky";
+// The 5 illustrated card types from the physical deck (not literal "colors") — ice is the one
+// with 8 copies, the other four have 7 each (36 total).
+export type CardColor = "fire" | "tree" | "desert" | "grape" | "ice";
 
 export interface Card {
   id: string;

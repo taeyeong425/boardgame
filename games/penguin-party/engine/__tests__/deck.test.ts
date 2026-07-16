@@ -2,17 +2,26 @@ import { describe, expect, it } from "vitest";
 import { buildFullDeck, dealRound, mulberry32 } from "../deck";
 
 describe("buildFullDeck", () => {
-  it("has 36 cards with the correct color distribution", () => {
+  it("has 36 cards with the correct theme distribution", () => {
     const deck = buildFullDeck();
     expect(deck).toHaveLength(36);
     const counts: Record<string, number> = {};
     for (const c of deck) counts[c.color] = (counts[c.color] ?? 0) + 1;
-    expect(counts).toEqual({ red: 7, green: 7, yellow: 7, purple: 7, sky: 8 });
+    expect(counts).toEqual({ fire: 7, tree: 7, desert: 7, grape: 7, ice: 8 });
   });
 });
 
 describe("dealRound", () => {
   const ids = (n: number) => Array.from({ length: n }, (_, i) => `p${i}`);
+
+  it("deals evenly for 2 players using the full 36-card deck (no set-aside)", () => {
+    const deal = dealRound(ids(2), mulberry32(5));
+    expect(Object.values(deal.hands).map((h) => h.length)).toEqual([18, 18]);
+    expect(deal.layer1MaxWidth).toBe(8);
+    expect(deal.revealedExtraCard).toBeNull();
+    const allIds = Object.values(deal.hands).flatMap((h) => h.map((c) => c.id));
+    expect(new Set(allIds).size).toBe(36); // every card in the deck is dealt to someone
+  });
 
   it("deals evenly for 3 players with no leftover", () => {
     const deal = dealRound(ids(3), mulberry32(1));
@@ -32,18 +41,11 @@ describe("dealRound", () => {
     expect(deal.revealedExtraCard).not.toBeNull();
   });
 
-  it("sets aside 8 cards and reduces layer1MaxWidth to 7 for 2 players", () => {
-    const deal = dealRound(ids(2), mulberry32(5));
-    expect(Object.values(deal.hands).map((h) => h.length)).toEqual([14, 14]);
-    expect(deal.layer1MaxWidth).toBe(7);
-    expect(deal.revealedExtraCard).toBeNull();
-  });
-
-  it("never deals the same card twice and never leaks the 2p set-aside cards", () => {
-    const deal = dealRound(ids(2), mulberry32(6));
+  it("never deals the same card twice", () => {
+    const deal = dealRound(ids(4), mulberry32(6));
     const allIds = Object.values(deal.hands).flatMap((h) => h.map((c) => c.id));
     expect(new Set(allIds).size).toBe(allIds.length);
-    expect(allIds).toHaveLength(28); // 36 - 8 set aside, none of which appear anywhere in DealResult
+    expect(allIds).toHaveLength(36);
   });
 
   it("is deterministic given the same seed", () => {

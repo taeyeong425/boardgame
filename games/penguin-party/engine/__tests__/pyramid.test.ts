@@ -28,8 +28,8 @@ describe("getAllLegalPositions — layer 1", () => {
 
   it("only allows extending at the left or right end, never a gap", () => {
     let p = emptyPyramid();
-    p = place(p, 1, 0, card("a", "red"));
-    p = place(p, 1, 1, card("b", "green"));
+    p = place(p, 1, 0, card("a", "fire"));
+    p = place(p, 1, 1, card("b", "tree"));
     // layer1Range is now [0,1]; legal layer-1 extensions must be at -1 or 2 only.
     const positions = getAllLegalPositions(p).filter((lp) => lp.position.layer === 1);
     const indices = positions.map((lp) => lp.position.index).sort((a, b) => a - b);
@@ -38,9 +38,9 @@ describe("getAllLegalPositions — layer 1", () => {
 
   it("stops allowing layer-1 placement once max width is reached", () => {
     let p = emptyPyramid(3);
-    p = place(p, 1, 0, card("a", "red"));
-    p = place(p, 1, 1, card("b", "green"));
-    p = place(p, 1, 2, card("c", "yellow"));
+    p = place(p, 1, 0, card("a", "fire"));
+    p = place(p, 1, 1, card("b", "tree"));
+    p = place(p, 1, 2, card("c", "desert"));
     const positions = getAllLegalPositions(p).filter((lp) => lp.position.layer === 1);
     expect(positions).toHaveLength(0);
   });
@@ -49,33 +49,33 @@ describe("getAllLegalPositions — layer 1", () => {
 describe("getAllLegalPositions — layer 2+", () => {
   it("requires two occupied adjacent cells below and matches at least one color", () => {
     let p = emptyPyramid();
-    p = place(p, 1, 0, card("a", "red"));
-    p = place(p, 1, 1, card("b", "green"));
+    p = place(p, 1, 0, card("a", "fire"));
+    p = place(p, 1, 1, card("b", "tree"));
     const upper = getAllLegalPositions(p).find((lp) => lp.position.layer === 2 && lp.position.index === 0);
     expect(upper).toBeDefined();
-    expect(upper!.allowedColors).toEqual(["red", "green"]);
+    expect(upper!.allowedColors).toEqual(["fire", "tree"]);
   });
 
   it("restricts to a single color when both supports share a color", () => {
     let p = emptyPyramid();
-    p = place(p, 1, 0, card("a", "red"));
-    p = place(p, 1, 1, card("b", "red"));
+    p = place(p, 1, 0, card("a", "fire"));
+    p = place(p, 1, 1, card("b", "fire"));
     const upper = getAllLegalPositions(p).find((lp) => lp.position.layer === 2 && lp.position.index === 0);
-    expect(upper!.allowedColors).toEqual(["red"]);
+    expect(upper!.allowedColors).toEqual(["fire"]);
   });
 
   it("does not offer a layer-2 gap that is already filled", () => {
     let p = emptyPyramid();
-    p = place(p, 1, 0, card("a", "red"));
-    p = place(p, 1, 1, card("b", "green"));
-    p = place(p, 2, 0, card("c", "red"));
+    p = place(p, 1, 0, card("a", "fire"));
+    p = place(p, 1, 1, card("b", "tree"));
+    p = place(p, 2, 0, card("c", "fire"));
     const upper = getAllLegalPositions(p).filter((lp) => lp.position.layer === 2 && lp.position.index === 0);
     expect(upper).toHaveLength(0);
   });
 
   it("does not offer a position with only one occupied support", () => {
     let p = emptyPyramid();
-    p = place(p, 1, 0, card("a", "red"));
+    p = place(p, 1, 0, card("a", "fire"));
     // layer 1 index 1 is empty — no legal layer-2 position above index 0 yet.
     const upper = getAllLegalPositions(p).filter((lp) => lp.position.layer === 2);
     expect(upper).toHaveLength(0);
@@ -85,21 +85,21 @@ describe("getAllLegalPositions — layer 2+", () => {
 describe("isLegalPlacement / hasLegalMove / computeLegalPlacements", () => {
   it("rejects a color that matches neither support", () => {
     let p = emptyPyramid();
-    p = place(p, 1, 0, card("a", "red"));
-    p = place(p, 1, 1, card("b", "green"));
-    expect(isLegalPlacement(p, card("x", "yellow"), { layer: 2, index: 0 })).toBe(false);
-    expect(isLegalPlacement(p, card("x", "red"), { layer: 2, index: 0 })).toBe(true);
+    p = place(p, 1, 0, card("a", "fire"));
+    p = place(p, 1, 1, card("b", "tree"));
+    expect(isLegalPlacement(p, card("x", "desert"), { layer: 2, index: 0 })).toBe(false);
+    expect(isLegalPlacement(p, card("x", "fire"), { layer: 2, index: 0 })).toBe(true);
   });
 
   it("hasLegalMove is false when hand colors match nothing available", () => {
     let p = emptyPyramid(1); // layer1 full at width 1 already reached after one placement
-    p = place(p, 1, 0, card("a", "red"));
-    expect(hasLegalMove(p, [card("x", "green")])).toBe(false);
+    p = place(p, 1, 0, card("a", "fire"));
+    expect(hasLegalMove(p, [card("x", "tree")])).toBe(false);
   });
 
   it("computeLegalPlacements enumerates every (card, position) pair", () => {
     const p = emptyPyramid();
-    const hand = [card("x", "red"), card("y", "green")];
+    const hand = [card("x", "fire"), card("y", "tree")];
     const placements = computeLegalPlacements(p, hand);
     // empty board: only the anchor position, but both hand cards are eligible for it ("any" color)
     expect(placements).toHaveLength(2);

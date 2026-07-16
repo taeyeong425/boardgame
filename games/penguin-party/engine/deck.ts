@@ -1,11 +1,11 @@
 import type { Card, CardColor, PlayerId } from "./types";
 
 const COLOR_COUNTS: Record<CardColor, number> = {
-  red: 7,
-  green: 7,
-  yellow: 7,
-  purple: 7,
-  sky: 8,
+  fire: 7,
+  tree: 7,
+  desert: 7,
+  grape: 7,
+  ice: 8,
 };
 
 export function buildFullDeck(): Card[] {
@@ -48,30 +48,25 @@ export function shuffle<T>(arr: T[], rng: RNG): T[] {
 
 export interface DealResult {
   hands: Record<PlayerId, Card[]>;
-  /** 5-player variant only: the one card that doesn't fit evenly, revealed publicly, unplayable. */
+  /** 5-player case only: the one card that doesn't fit evenly, revealed publicly, unplayable. */
   revealedExtraCard: Card | null;
   layer1MaxWidth: number;
 }
 
 /**
- * Shuffles and deals a fresh 36-card deck for one round, applying the 2-player set-aside
- * variant (8 cards removed unseen, max layer-1 width drops to 7) and the 5-player leftover-card
- * reveal (1 card publicly shown, unplayable) as needed. Every other player count (3, 4, 6) divides
- * evenly with no special case.
+ * Shuffles and deals the full 36-card deck for one round, applying the 5-player leftover-card
+ * reveal (1 card publicly shown, unplayable) where needed. Every player count 2-6 uses the entire
+ * deck (36/2=18, 36/3=12, 36/4=9, 36/6=6, each with no leftover) and the same 8-wide layer 1 —
+ * this intentionally departs from the physical game's official 2-player variant (which sets aside
+ * 8 cards and narrows layer 1 to 7) per a house-rule request to keep all 36 cards in play regardless
+ * of player count.
  */
 export function dealRound(playerIds: PlayerId[], rng: RNG): DealResult {
   const n = playerIds.length;
   if (n < 2 || n > 6) throw new Error(`Penguin Party supports 2-6 players, got ${n}`);
 
-  let deck = shuffle(buildFullDeck(), rng);
-  let layer1MaxWidth = 8;
-
-  if (n === 2) {
-    // The deck is already shuffled, so dropping the first 8 is equivalent to setting aside a
-    // random 8 — they are discarded here and never stored, so they can never leak to any client.
-    deck = deck.slice(8);
-    layer1MaxWidth = 7;
-  }
+  const deck = shuffle(buildFullDeck(), rng);
+  const layer1MaxWidth = 8;
 
   const hands: Record<PlayerId, Card[]> = Object.fromEntries(playerIds.map((id) => [id, [] as Card[]]));
   const perPlayer = Math.floor(deck.length / n);
