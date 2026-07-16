@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Card, PyramidPosition, PyramidState } from "../engine/types";
-import { cardColorClass, cardColorGlyph } from "./cardColor";
+import type { LegalPosition } from "../engine/pyramid";
+import type { CardColor, PyramidPosition, PyramidState } from "../engine/types";
+import { CardFace } from "./CardFace";
+import { cardColorHex } from "./cardColor";
 
 const CELL = 44; // px
 
-interface HighlightCell {
-  position: PyramidPosition;
+function positionKey(position: PyramidPosition): string {
+  return `${position.layer}:${position.index}`;
 }
 
 function unitsFor(position: PyramidPosition) {
@@ -16,11 +18,16 @@ function unitsFor(position: PyramidPosition) {
 
 export function PyramidView({
   pyramid,
-  highlight,
+  legalPositions,
+  activeKeys,
   onSelectPosition,
 }: {
   pyramid: PyramidState;
-  highlight: HighlightCell[];
+  /** Every currently-open slot in the structure, active or not — always shown so the pyramid's
+   * shape (and which colors each gap still needs) is visible before you've even selected a card. */
+  legalPositions: LegalPosition[];
+  /** Subset of legalPositions the selected hand card can actually be placed into right now. */
+  activeKeys: Set<string>;
   onSelectPosition: (position: PyramidPosition) => void;
 }) {
   const occupied = useMemo(
@@ -28,17 +35,8 @@ export function PyramidView({
     [pyramid]
   );
 
-  const highlightKeys = useMemo(() => new Set(highlight.map((h) => `${h.position.layer}:${h.position.index}`)), [highlight]);
-
-  const allPositions = useMemo(() => {
-    const occupiedPositions = occupied.map((c) => c.position);
-    // De-dupe in case a highlight coincides with an occupied cell (shouldn't happen, but stay safe).
-    const seen = new Set(occupiedPositions.map((p) => `${p.layer}:${p.index}`));
-    const highlightOnly = highlight.filter((h) => !seen.has(`${h.position.layer}:${h.position.index}`));
-    return [...occupiedPositions, ...highlightOnly.map((h) => h.position)];
-  }, [occupied, highlight]);
-
   const bounds = useMemo(() => {
+    const allPositions = [...occupied.map((c) => c.position), ...legalPositions.map((lp) => lp.position)];
     if (allPositions.length === 0) return { minX: -0.5, maxX: 0.5, minY: -0.5, maxY: 0.5 };
     const units = allPositions.map(unitsFor);
     return {
@@ -47,7 +45,7 @@ export function PyramidView({
       minY: Math.min(...units.map((u) => u.y)) - 0.5,
       maxY: Math.max(...units.map((u) => u.y)) + 0.5,
     };
-  }, [allPositions]);
+  }, [occupied, legalPositions]);
 
   const width = (bounds.maxX - bounds.minX) * CELL;
   const height = (bounds.maxY - bounds.minY) * CELL;
@@ -55,23 +53,29 @@ export function PyramidView({
   return (
     <div className="w-full overflow-auto rounded-xl bg-slate-800/40 p-4">
       <div className="relative mx-auto" style={{ width, height }}>
-        {occupied.map(({ position, card }) => (
-          <PyramidCell key={`${position.layer}:${position.index}`} position={position} bounds={bounds} card={card} />
-        ))}
-        {highlight.map((h) => {
-          const key = `${h.position.layer}:${h.position.index}`;
-          if (!highlightKeys.has(key)) return null;
-          const u = unitsFor(h.position);
+        {occupied.map(({ position, card }) => {
+          const u = unitsFor(position);
           const left = (u.x - bounds.minX) * CELL - CELL / 2;
           const top = (u.y - bounds.minY) * CELL - CELL / 2;
           return (
-            <button
+            <div key={positionKey(position)} className="absolute" style={{ left, top, width: CELL - 4, height: CELL - 4 }}>
+              <CardFace color={card.color} />
+            </div>
+          );
+        })}
+        {legalPositions.map((lp) => {
+          const key = positionKey(lp.position);
+          const u = unitsFor(lp.position);
+          const left = (u.x - bounds.minX) * CELL - CELL / 2;
+          const top = (u.y - bounds.minY) * CELL - CELL / 2;
+          const active = activeKeys.has(key);
+          return (
+            <EmptySlot
               key={key}
-              type="button"
-              onClick={() => onSelectPosition(h.position)}
-              className="absolute flex items-center justify-center rounded-lg border-2 border-dashed border-emerald-400 bg-emerald-400/10 active:scale-95"
               style={{ left, top, width: CELL - 4, height: CELL - 4 }}
-              aria-label={`${h.position.layer}층 ${h.position.index}칸에 놓기`}
+              allowedColors={lp.allowedColors}
+              active={active}
+              onClick={() => onSelectPosition(lp.position)}
             />
           );
         })}
@@ -80,24 +84,39 @@ export function PyramidView({
   );
 }
 
-function PyramidCell({
-  position,
-  bounds,
-  card,
+function EmptySlot({
+  style,
+  allowedColors,
+  active,
+  onClick,
 }: {
-  position: PyramidPosition;
-  bounds: { minX: number; minY: number };
-  card: Card;
+  style: React.CSSProperties;
+  allowedColors: CardColor[] | "any";
+  active: boolean;
+  onClick: () => void;
 }) {
-  const u = unitsFor(position);
-  const left = (u.x - bounds.minX) * CELL - CELL / 2;
-  const top = (u.y - bounds.minY) * CELL - CELL / 2;
+  const label =
+    allowedColors === "any"
+      ? "빈 칸"
+      : `${allowedColors.length === 1 ? "" : "둘 중 하나 "}필요한 색: ${allowedColors.join(", ")}`;
   return (
-    <div
-      className={`absolute flex items-center justify-center rounded-lg border font-bold ${cardColorClass(card.color)}`}
-      style={{ left, top, width: CELL - 4, height: CELL - 4 }}
+    <button
+      type="button"
+      disabled={!active}
+      onClick={onClick}
+      aria-label={label}
+      className={`absolute flex items-center justify-center rounded-md border-2 border-dashed transition-colors ${
+        active ? "border-emerald-400 bg-emerald-400/10 active:scale-95" : "border-white/15 bg-white/[0.03]"
+      }`}
+      style={style}
     >
-      {cardColorGlyph(card.color)}
-    </div>
+      {allowedColors !== "any" && (
+        <div className="flex gap-0.5">
+          {allowedColors.map((c) => (
+            <div key={c} className="h-2 w-2 rounded-full opacity-70" style={{ backgroundColor: cardColorHex(c) }} />
+          ))}
+        </div>
+      )}
+    </button>
   );
 }

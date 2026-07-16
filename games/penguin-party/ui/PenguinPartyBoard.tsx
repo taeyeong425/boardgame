@@ -22,11 +22,15 @@ export function PenguinPartyGame({ selfPlayerId, gameState, sendAction }: GameCo
 
   const selectedCard = state.myHand.find((c) => c.id === selectedCardId) ?? null;
 
-  const highlight = useMemo(() => {
-    if (!isMyTurn || !selectedCard) return [];
-    return legalPositions
-      .filter((lp) => lp.allowedColors === "any" || lp.allowedColors.includes(selectedCard.color))
-      .map((lp) => ({ position: lp.position }));
+  // legalPositions is always shown (the pyramid's open slots, and which colors each needs) —
+  // activeKeys is just the subset actually placeable with the currently selected card.
+  const activeKeys = useMemo(() => {
+    if (!isMyTurn || !selectedCard) return new Set<string>();
+    return new Set(
+      legalPositions
+        .filter((lp) => lp.allowedColors === "any" || lp.allowedColors.includes(selectedCard.color))
+        .map((lp) => `${lp.position.layer}:${lp.position.index}`)
+    );
   }, [isMyTurn, selectedCard, legalPositions]);
 
   function handleSelectPosition(position: PyramidPosition) {
@@ -59,7 +63,12 @@ export function PenguinPartyGame({ selfPlayerId, gameState, sendAction }: GameCo
 
       <OpponentStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 
-      <PyramidView pyramid={state.pyramid} highlight={highlight} onSelectPosition={handleSelectPosition} />
+      <PyramidView
+        pyramid={state.pyramid}
+        legalPositions={legalPositions}
+        activeKeys={activeKeys}
+        onSelectPosition={handleSelectPosition}
+      />
 
       {state.myEliminated && (
         <p className="text-center text-sm text-red-300">이번 라운드 탈락 — 남은 카드는 비공개로 유지됩니다.</p>

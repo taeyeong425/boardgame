@@ -1,7 +1,7 @@
 "use client";
 
 import type { Card } from "../engine/types";
-import { cardColorClass, cardColorGlyph } from "./cardColor";
+import { CardFace } from "./CardFace";
 
 export function PlayerHand({
   hand,
@@ -22,11 +22,11 @@ export function PlayerHand({
           type="button"
           disabled={!playable}
           onClick={() => onSelectCard(card.id)}
-          className={`flex h-16 w-12 shrink-0 items-center justify-center rounded-lg border-2 font-bold ${cardColorClass(card.color)} ${
-            selectedCardId === card.id ? "ring-4 ring-white" : ""
+          className={`h-20 w-14 shrink-0 rounded-md transition-transform ${
+            selectedCardId === card.id ? "-translate-y-2 ring-2 ring-white" : ""
           } ${playable ? "active:scale-95" : "opacity-40"}`}
         >
-          {cardColorGlyph(card.color)}
+          <CardFace color={card.color} />
         </button>
       ))}
       {hand.length === 0 && <p className="p-2 text-sm text-white/40">손패 없음</p>}

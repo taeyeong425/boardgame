@@ -31,6 +31,21 @@ export function cardColorGlyph(color: CardColor): string {
   }
 }
 
+export function cardColorHex(color: CardColor): string {
+  switch (color) {
+    case "red":
+      return "#ef4444";
+    case "green":
+      return "#10b981";
+    case "yellow":
+      return "#eab308";
+    case "purple":
+      return "#a855f7";
+    case "sky":
+      return "#38bdf8";
+  }
+}
+
 export function cardColorLabel(color: CardColor): string {
   switch (color) {
     case "red":
