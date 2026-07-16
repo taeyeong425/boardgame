@@ -5,7 +5,14 @@ import { buildScoreEntry, computeTotals } from "../shared/scoring";
 import type { GameId, Player, RoomState } from "../shared/types";
 import { getGameModule } from "./games/registry";
 import { loadRoomState, saveRoomState } from "./room/persistence";
-import { createRoomState, orderedPlayers, promoteHostIfNeeded, toPublicRoomState, upsertPlayer } from "./room/RoomState";
+import {
+  createRoomState,
+  orderedPlayers,
+  promoteHostIfNeeded,
+  toPublicRoomState,
+  upsertPlayer,
+  withHost,
+} from "./room/RoomState";
 
 const TURN_TIMEOUT_MS = 60_000;
 
@@ -132,6 +139,10 @@ export default class BoardgameRoom implements Party.Server {
         return this.handleBackToLobby(sender);
       case "kickPlayer":
         return this.handleKickPlayer(sender, parsed.playerId);
+      case "transferHost":
+        return this.handleTransferHost(sender, parsed.playerId);
+      case "changeNickname":
+        return this.handleChangeNickname(sender, parsed.nickname);
     }
   }
 
@@ -324,6 +335,36 @@ export default class BoardgameRoom implements Party.Server {
     const { [targetPlayerId]: _removed, ...players } = state.players;
     let next: RoomState = { ...state, players };
     next = promoteHostIfNeeded(next);
+    await saveRoomState(this.room, next);
+    broadcastPublicState(this.room, next);
+  }
+
+  private async handleTransferHost(sender: Party.Connection, targetPlayerId: string) {
+    const { state } = await this.requireHost(sender);
+    if (!state) return;
+
+    if (state.phase !== "lobby") {
+      send(sender, { type: "error", code: "INVALID_STATE", message: "Can only hand off host from the lobby." });
+      return;
+    }
+    if (!state.players[targetPlayerId]) {
+      send(sender, { type: "error", code: "NOT_FOUND", message: "No such player." });
+      return;
+    }
+    const next = withHost(state, targetPlayerId);
+    await saveRoomState(this.room, next);
+    broadcastPublicState(this.room, next);
+  }
+
+  private async handleChangeNickname(sender: Party.Connection, nickname: string) {
+    const cs = connState(sender);
+    if (!cs?.playerId) return;
+    const trimmed = nickname.trim().slice(0, 16);
+    if (!trimmed) return;
+
+    const state = await loadRoomState(this.room);
+    if (!state || !state.players[cs.playerId]) return;
+    const next = upsertPlayer(state, { ...state.players[cs.playerId], nickname: trimmed });
     await saveRoomState(this.room, next);
     broadcastPublicState(this.room, next);
   }

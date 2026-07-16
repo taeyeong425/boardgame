@@ -8,7 +8,9 @@ export type ClientMessage =
   | { type: "startGame" } // host only
   | { type: "gameAction"; action: unknown } // forwarded verbatim to the active GameModule.applyMove
   | { type: "backToLobby" } // host only, after round-end
-  | { type: "kickPlayer"; playerId: string }; // host only
+  | { type: "kickPlayer"; playerId: string } // host only
+  | { type: "transferHost"; playerId: string } // host only, lobby only
+  | { type: "changeNickname"; nickname: string }; // any player, about themselves, any phase
 
 /**
  * `roomState` carries everything except `currentGameState`, which is stripped server-side

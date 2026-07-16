@@ -1,5 +1,6 @@
 "use client";
 
+import { NicknameEditButton } from "@/components/common/NicknameEditButton";
 import { gameUiRegistry } from "@/games/registry";
 import type { UseRoomSocketResult } from "@/hooks/useRoomSocket";
 import { LobbyScreen } from "../lobby/LobbyScreen";
@@ -48,18 +49,19 @@ export function GameShell({ code, room }: { code: string; room: UseRoomSocketRes
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 px-3 py-4">
       {status !== "open" && <p className="text-center text-xs text-amber-400">연결 상태: {status}</p>}
-      <div className="flex items-center justify-between">
-        {isHost ? (
-          <button
-            type="button"
-            onClick={handleLeaveToLobby}
-            className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/60 active:scale-95"
-          >
-            로비로 나가기
-          </button>
-        ) : (
-          <span />
-        )}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {isHost && (
+            <button
+              type="button"
+              onClick={handleLeaveToLobby}
+              className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/60 active:scale-95"
+            >
+              로비로 나가기
+            </button>
+          )}
+          <NicknameEditButton currentNickname={publicState.players[selfPlayerId]?.nickname ?? ""} sendMessage={sendMessage} />
+        </div>
         <TurnTimerBadge turnDeadline={publicState.turnDeadline} />
       </div>
       <GameComponent

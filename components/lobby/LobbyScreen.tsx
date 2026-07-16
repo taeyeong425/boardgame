@@ -1,5 +1,6 @@
 "use client";
 
+import { NicknameEditButton } from "@/components/common/NicknameEditButton";
 import type { ConnectionStatus } from "@/hooks/useRoomSocket";
 import type { ClientMessage, PublicRoomState } from "@/shared/messages";
 import { GamePicker } from "./GamePicker";
@@ -26,14 +27,25 @@ export function LobbyScreen({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-10">
-      <div>
-        <p className="text-sm text-white/50">방 코드 (친구에게 공유하세요)</p>
-        <p className="text-4xl font-bold tracking-widest">{code}</p>
-        {status !== "open" && <p className="mt-1 text-xs text-amber-400">연결 상태: {status}</p>}
-        {lastError && <p className="mt-1 text-xs text-red-400">{lastError.message}</p>}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-white/50">방 코드 (친구에게 공유하세요)</p>
+          <p className="text-4xl font-bold tracking-widest">{code}</p>
+          {status !== "open" && <p className="mt-1 text-xs text-amber-400">연결 상태: {status}</p>}
+          {lastError && <p className="mt-1 text-xs text-red-400">{lastError.message}</p>}
+        </div>
+        <NicknameEditButton currentNickname={publicState.players[selfPlayerId]?.nickname ?? ""} sendMessage={sendMessage} />
       </div>
 
-      <PlayerList players={players} hostPlayerId={publicState.hostPlayerId} selfPlayerId={selfPlayerId} totals={publicState.totals} />
+      <PlayerList
+        players={players}
+        hostPlayerId={publicState.hostPlayerId}
+        selfPlayerId={selfPlayerId}
+        totals={publicState.totals}
+        isSelfHost={isHost}
+        isLobby={publicState.phase === "lobby"}
+        onTransferHost={(playerId) => sendMessage({ type: "transferHost", playerId })}
+      />
 
       {publicState.nextStartingPlayerId && (
         <p className="-mt-3 text-center text-xs text-white/50">
