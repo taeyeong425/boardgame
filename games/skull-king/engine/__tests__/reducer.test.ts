@@ -1,0 +1,216 @@
+import { describe, expect, it } from "vitest";
+import {
+  applyMove,
+  autoMove,
+  computeResult,
+  createInitialState,
+  getCurrentTurnPlayerId,
+  isGameOver,
+} from "../reducer";
+import type { Card, SkullKingState } from "../types";
+
+function player(id: string, nickname: string) {
+  return { id, nickname, connectionId: null, connected: true, isHost: false, joinedAt: 0 };
+}
+
+describe("createInitialState", () => {
+  it("starts round 1 in the bidding phase, dealing 1 card per player", () => {
+    const players = [player("p0", "A"), player("p1", "B"), player("p2", "C")];
+    const state = createInitialState(players);
+    expect(state.round.roundNumber).toBe(1);
+    expect(state.round.phase).toBe("bidding");
+    expect(state.round.turnOrder.length).toBe(3);
+    for (const p of players) expect(state.round.players[p.id].hand.length).toBe(1);
+  });
+
+  it("honors a valid startingPlayerId hint as the round's leader (turnOrder[0])", () => {
+    const players = [player("p0", "A"), player("p1", "B"), player("p2", "C")];
+    const state = createInitialState(players, "p2");
+    expect(state.round.turnOrder[0]).toBe("p2");
+    expect(getCurrentTurnPlayerId(state)).toBe("p2");
+  });
+
+  it("falls back to a random valid leader when the hint is missing or invalid", () => {
+    const players = [player("p0", "A"), player("p1", "B")];
+    const state = createInitialState(players, "not-in-this-game");
+    expect(["p0", "p1"]).toContain(state.round.turnOrder[0]);
+  });
+});
+
+/** A fully hand-built 2-player, round-1 (1 card each) state so trick resolution and scoring can be
+ * checked with exact, known cards rather than a shuffled deal. */
+function twoPlayerRound1(hands: Record<string, Card>): SkullKingState {
+  return {
+    players: [
+      { id: "p0", nickname: "A" },
+      { id: "p1", nickname: "B" },
+    ],
+    round: {
+      roundNumber: 1,
+      turnOrder: ["p0", "p1"],
+      phase: "bidding",
+      turnIndex: 0,
+      players: {
+        p0: { hand: [hands.p0], bid: null, tricksWon: 0, bonusPoints: 0 },
+        p1: { hand: [hands.p1], bid: null, tricksWon: 0, bonusPoints: 0 },
+      },
+      completedTricks: [],
+      currentTrick: null,
+    },
+    totalRounds: 10,
+    roundHistory: [],
+    cumulativeScores: { p0: 0, p1: 0 },
+    phase: "playing",
+  };
+}
+
+describe("applyMove — bidding", () => {
+  it("rejects a bid from a player who isn't the current turn", () => {
+    const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
+    expect(applyMove(state, "p1", { type: "bid", value: 0 })).toEqual({ ok: false, error: "NOT_YOUR_TURN" });
+  });
+
+  it("rejects a bid outside 0..cardsInHand", () => {
+    const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
+    expect(applyMove(state, "p0", { type: "bid", value: 2 })).toEqual({ ok: false, error: "ILLEGAL_BID" });
+  });
+
+  it("advances turn without revealing the bid to the other player, then flips to playing once all bid", () => {
+    const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
+    const r1 = applyMove(state, "p0", { type: "bid", value: 1 });
+    expect(r1.ok).toBe(true);
+    if (!r1.ok) return;
+    expect(r1.state.round.phase).toBe("bidding");
+    expect(getCurrentTurnPlayerId(r1.state)).toBe("p1");
+
+    const r2 = applyMove(r1.state, "p1", { type: "bid", value: 0 });
+    expect(r2.ok).toBe(true);
+    if (!r2.ok) return;
+    expect(r2.state.round.phase).toBe("playing");
+    expect(r2.state.round.currentTrick).toEqual({ leaderId: "p0", plays: [], ledSuit: null });
+    expect(getCurrentTurnPlayerId(r2.state)).toBe("p0");
+  });
+});
+
+function biddedState(p0Card: Card, p1Card: Card, p0Bid: number, p1Bid: number): SkullKingState {
+  const state = twoPlayerRound1({ p0: p0Card, p1: p1Card });
+  const r1 = applyMove(state, "p0", { type: "bid", value: p0Bid });
+  if (!r1.ok) throw new Error(r1.error);
+  const r2 = applyMove(r1.state, "p1", { type: "bid", value: p1Bid });
+  if (!r2.ok) throw new Error(r2.error);
+  return r2.state;
+}
+
+describe("applyMove — playCard", () => {
+  it("rejects playing a card not in hand", () => {
+    const state = biddedState({ kind: "escape", id: "escape-1" }, { kind: "escape", id: "escape-2" }, 0, 0);
+    expect(applyMove(state, "p0", { type: "playCard", cardId: "nope" })).toEqual({ ok: false, error: "CARD_NOT_IN_HAND" });
+  });
+
+  it("requires a declaration when playing the Tigress", () => {
+    const state = biddedState({ kind: "tigress", id: "tigress" }, { kind: "escape", id: "escape-2" }, 0, 0);
+    expect(applyMove(state, "p0", { type: "playCard", cardId: "tigress" })).toEqual({
+      ok: false,
+      error: "TIGRESS_DECLARATION_REQUIRED",
+    });
+  });
+
+  it("enforces follow-suit for numbered cards", () => {
+    const state = twoPlayerRound1({ p0: { kind: "number", id: "green-1", suit: "green", value: 1 }, p1: { kind: "number", id: "yellow-2", suit: "yellow", value: 2 } });
+    // give p1 a second card so the follow-suit check actually has a choice to reject
+    state.round.players.p1.hand.push({ kind: "number", id: "green-9", suit: "green", value: 9 });
+    const b1 = applyMove(state, "p0", { type: "bid", value: 1 });
+    if (!b1.ok) throw new Error(b1.error);
+    const b2 = applyMove(b1.state, "p1", { type: "bid", value: 1 });
+    if (!b2.ok) throw new Error(b2.error);
+    // p0 leads green-1, p1 has a green card (green-9) so playing yellow-2 must be rejected
+    const lead = applyMove(b2.state, "p0", { type: "playCard", cardId: "green-1" });
+    if (!lead.ok) throw new Error(lead.error);
+    expect(applyMove(lead.state, "p1", { type: "playCard", cardId: "yellow-2" })).toEqual({
+      ok: false,
+      error: "MUST_FOLLOW_SUIT",
+    });
+  });
+
+  it("resolves the trick, tallies the round, and starts round 2 with the seat rotated by one", () => {
+    const state = biddedState(
+      { kind: "number", id: "green-9", suit: "green", value: 9 },
+      { kind: "number", id: "green-3", suit: "green", value: 3 },
+      1,
+      0
+    );
+    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "green-9" });
+    expect(p0Plays.ok).toBe(true);
+    if (!p0Plays.ok) return;
+    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "green-3" });
+    expect(p1Plays.ok).toBe(true);
+    if (!p1Plays.ok) return;
+
+    // p0 bid 1 and won the only trick -> +20; p1 bid 0 and won 0 -> +10*1
+    expect(p1Plays.state.roundHistory[0].scores.p0).toEqual({ bid: 1, tricksWon: 1, bonusPoints: 0, roundPoints: 20 });
+    expect(p1Plays.state.roundHistory[0].scores.p1).toEqual({ bid: 0, tricksWon: 0, bonusPoints: 0, roundPoints: 10 });
+    expect(p1Plays.state.cumulativeScores).toEqual({ p0: 20, p1: 10 });
+
+    // next round's turn order rotates by one seat: p1 leads round 2
+    expect(p1Plays.state.round.roundNumber).toBe(2);
+    expect(p1Plays.state.round.turnOrder).toEqual(["p1", "p0"]);
+    expect(p1Plays.state.round.players.p0.hand.length).toBe(2);
+    expect(isGameOver(p1Plays.state)).toBe(false);
+  });
+});
+
+describe("computeResult", () => {
+  it("reports cumulative scores with descending sort order", () => {
+    const state = biddedState(
+      { kind: "number", id: "green-9", suit: "green", value: 9 },
+      { kind: "number", id: "green-3", suit: "green", value: 3 },
+      1,
+      0
+    );
+    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "green-9" });
+    if (!p0Plays.ok) throw new Error(p0Plays.error);
+    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "green-3" });
+    if (!p1Plays.ok) throw new Error(p1Plays.error);
+
+    const { rawScores, sortOrder, summary } = computeResult({ ...p1Plays.state, phase: "gameOver" });
+    expect(sortOrder).toBe("desc");
+    expect(rawScores).toEqual({ p0: 20, p1: 10 });
+    expect(summary).toContain("A");
+  });
+});
+
+describe("autoMove", () => {
+  it("bids zero during the bidding phase", () => {
+    const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
+    expect(autoMove(state, "p0")).toEqual({ type: "bid", value: 0 });
+  });
+
+  it("plays the first legal card, declaring a Tigress as escape", () => {
+    const state = biddedState({ kind: "tigress", id: "tigress" }, { kind: "escape", id: "escape-2" }, 0, 0);
+    expect(autoMove(state, "p0")).toEqual({ type: "playCard", cardId: "tigress", declareTigressAs: "escape" });
+  });
+});
+
+describe("full randomized playthrough (autoMove every turn)", () => {
+  it("always terminates after 10 rounds with valid totals for 2-6 players", () => {
+    for (let n = 2; n <= 6; n++) {
+      const players = Array.from({ length: n }, (_, i) => player(`p${i}`, `Player${i}`));
+      let state = createInitialState(players);
+      let guard = 0;
+      while (!isGameOver(state)) {
+        guard++;
+        if (guard > 5000) throw new Error(`playthrough for n=${n} did not terminate`);
+        const current = getCurrentTurnPlayerId(state)!;
+        const move = autoMove(state, current);
+        const result = applyMove(state, current, move);
+        expect(result.ok).toBe(true);
+        if (!result.ok) throw new Error(result.error);
+        state = result.state;
+      }
+      expect(state.roundHistory.length).toBe(10);
+      const { rawScores, sortOrder } = computeResult(state);
+      expect(sortOrder).toBe("desc");
+      for (const p of players) expect(rawScores[p.id]).toBe(state.cumulativeScores[p.id]);
+    }
+  });
+});

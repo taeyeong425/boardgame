@@ -7,7 +7,7 @@ import type { GameCatalogEntry } from "./types";
  */
 export const GAME_CATALOG: GameCatalogEntry[] = [
   { id: "penguin-party", displayName: "펭귄파티", minPlayers: 2, maxPlayers: 6, implemented: true },
-  { id: "skull-king", displayName: "스컬킹", minPlayers: 2, maxPlayers: 6, implemented: false },
+  { id: "skull-king", displayName: "스컬킹", minPlayers: 2, maxPlayers: 6, implemented: true },
   { id: "bluff", displayName: "블러프", minPlayers: 2, maxPlayers: 6, implemented: true },
   { id: "las-vegas", displayName: "라스베가스", minPlayers: 2, maxPlayers: 5, implemented: true },
 ];
