@@ -14,15 +14,28 @@ function player(id: string, nickname: string) {
 }
 
 describe("createInitialState", () => {
-  it("deals a valid round for N players with the right total card count", () => {
+  it("deals a valid round for N players with the right total card count, always 1 total round", () => {
     const players = [player("p0", "A"), player("p1", "B"), player("p2", "C")];
     const state = createInitialState(players);
     expect(state.phase).toBe("roundInProgress");
-    expect(state.totalRounds).toBe(3);
+    expect(state.totalRounds).toBe(1); // a "game" is a single round regardless of player count
     expect(state.round.roundNumber).toBe(1);
     const dealt = Object.values(state.round.hands).reduce((sum, h) => sum + h.length, 0);
     expect(dealt).toBe(36); // 3 players, no leftover
     expect(getCurrentTurnPlayerId(state)).not.toBeNull();
+  });
+
+  it("honors a valid startingPlayerId hint", () => {
+    const players = [player("p0", "A"), player("p1", "B"), player("p2", "C")];
+    const state = createInitialState(players, "p2");
+    expect(state.round.startingPlayerId).toBe("p2");
+    expect(getCurrentTurnPlayerId(state)).toBe("p2");
+  });
+
+  it("falls back to a random valid starting player when the hint is missing or invalid", () => {
+    const players = [player("p0", "A"), player("p1", "B")];
+    const state = createInitialState(players, "not-in-this-game");
+    expect(["p0", "p1"]).toContain(state.round.startingPlayerId);
   });
 });
 

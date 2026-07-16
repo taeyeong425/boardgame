@@ -35,6 +35,16 @@ export function LobbyScreen({
 
       <PlayerList players={players} hostPlayerId={publicState.hostPlayerId} selfPlayerId={selfPlayerId} totals={publicState.totals} />
 
+      {publicState.nextStartingPlayerId && (
+        <p className="-mt-3 text-center text-xs text-white/50">
+          다음 게임은{" "}
+          <span className="font-semibold text-white/80">
+            {publicState.players[publicState.nextStartingPlayerId]?.nickname ?? "?"}
+          </span>
+          님부터 시작해요 (직전 게임 1등).
+        </p>
+      )}
+
       <GamePicker
         isHost={isHost}
         playerCount={players.length}

@@ -116,15 +116,18 @@ function placeCardIntoPyramid(
   };
 }
 
-export function createInitialState(players: Player[]): PenguinPartyState {
+export function createInitialState(players: Player[], startingPlayerId?: string | null): PenguinPartyState {
   const turnOrder = players.map((p) => p.id);
-  const startingPlayerId = turnOrder[Math.floor(Math.random() * turnOrder.length)];
+  const resolvedStartingPlayerId =
+    startingPlayerId && turnOrder.includes(startingPlayerId)
+      ? startingPlayerId
+      : turnOrder[Math.floor(Math.random() * turnOrder.length)];
   const initialPlayers: PlayerGameState[] = players.map((p) => ({
     id: p.id,
     nickname: p.nickname,
     cumulativePenalty: 0,
   }));
-  const round = buildRound(1, startingPlayerId, turnOrder);
+  const round = buildRound(1, resolvedStartingPlayerId, turnOrder);
   // Defensive: on a freshly dealt, empty board every player with cards can legally play the anchor
   // move, so this should never actually eliminate anyone — but routing through settleTurn once
   // keeps "currentTurnIndex always points at someone with a legal move" a single enforced invariant.
@@ -133,7 +136,9 @@ export function createInitialState(players: Player[]): PenguinPartyState {
     players: settled.players,
     round: settled.round,
     roundHistory: [],
-    totalRounds: turnOrder.length,
+    // A "game" of Penguin Party is a single round regardless of player count — a deliberate house
+    // rule (the official rulebook plays (player count) rounds); see docs/rules/penguin-party.md.
+    totalRounds: 1,
     phase: settled.roundOver ? "gameOver" : "roundInProgress",
   };
 }

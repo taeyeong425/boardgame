@@ -30,6 +30,17 @@ https://gamers-hq.de/media/pdf/36/1a/4e/PenguinParty_rule_KR_ol.pdf
   your last card cleanly → reduce cumulative penalty by 2 (or by however much you have, floored at 0).
 - Round ends when everyone is eliminated, or every non-eliminated player has emptied their hand (a
   lone survivor keeps playing until they too are eliminated or empty-handed).
-- Game = (player count) rounds; lowest cumulative penalty wins, ties share the win.
+- **House-rule deviation**: the official rulebook plays (player count) rounds per game, accumulating
+  penalty across all of them before ranking. Per explicit request, a "game" here is always exactly
+  **1 round** regardless of player count — that single round's penalty total directly determines
+  the game's rank/points. See `totalRounds = 1` in `games/penguin-party/engine/reducer.ts`.
+
+## Cross-game starting-player rule (platform-level, applies to every game not just this one)
+
+Who goes first in a game is a hint (`RoomState.nextStartingPlayerId`) the room passes to
+`GameModule.createInitialState(players, startingPlayerId?)`:
+- The very first game played in a fresh room has no prior winner, so it's picked randomly.
+- Every game after that starts with the **previous game's rank-1 winner** (ties broken by
+  earliest-joined). Set in `party/index.ts`'s `applyGameMove` right when a game ends.
 
 Full implementation, engine + tests: `games/penguin-party/engine/`.

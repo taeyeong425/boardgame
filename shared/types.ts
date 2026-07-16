@@ -37,6 +37,13 @@ export interface RoomState {
   scoreLedger: ScoreEntry[];
   /** cumulative points per player across the whole game-night session, cached from scoreLedger. */
   totals: Record<string, number>;
+  /**
+   * Who should go first in the next game started in this room. Set to the previous game's rank-1
+   * winner right when a game ends; null for a fresh room's very first game (each GameModule falls
+   * back to picking randomly among its players when this is null or references someone not in
+   * the current game's roster).
+   */
+  nextStartingPlayerId: string | null;
 }
 
 export interface GameCatalogEntry {

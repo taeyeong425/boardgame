@@ -77,12 +77,15 @@ async function applyGameMove(
     const { rawScores, sortOrder, summary } = gameModule.computeResult(result.state);
     const entry = buildScoreEntry(state.currentGameId, rawScores, sortOrder, playerIds, summary);
     const scoreLedger = [...state.scoreLedger, entry];
+    // The rank-1 winner(s) of this game start first next game; ties broken by earliest-joined.
+    const nextStartingPlayerId = playerIds.find((id) => entry.ranks[id] === 1) ?? null;
     next = {
       ...next,
       phase: "round-end",
       scoreLedger,
       totals: computeTotals(scoreLedger, playerIds),
       turnDeadline: null,
+      nextStartingPlayerId,
     };
     await clearTurnAlarm(room);
   } else {
@@ -266,7 +269,7 @@ export default class BoardgameRoom implements Party.Server {
       return;
     }
 
-    const gameState = gameModule.createInitialState(players);
+    const gameState = gameModule.createInitialState(players, state.nextStartingPlayerId);
     const deadline = Date.now() + TURN_TIMEOUT_MS;
     const next: RoomState = { ...state, phase: "in-game", currentGameState: gameState, turnDeadline: deadline };
     await scheduleTurnAlarm(this.room, deadline);

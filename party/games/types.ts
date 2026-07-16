@@ -19,7 +19,12 @@ export interface GameModule<TState = unknown, TMove = unknown, TClientState = TS
   minPlayers: number;
   maxPlayers: number;
 
-  createInitialState(players: Player[]): TState;
+  /**
+   * startingPlayerId is a hint from the room (typically the previous game's rank-1 winner) for
+   * who should go first — pass null/undefined, or ignore it, to pick a starting player yourself
+   * (e.g. randomly) when there's no prior winner yet or the hinted player isn't in this game.
+   */
+  createInitialState(players: Player[], startingPlayerId?: string | null): TState;
 
   applyMove(state: TState, playerId: string, move: TMove): MoveResult<TState>;
 

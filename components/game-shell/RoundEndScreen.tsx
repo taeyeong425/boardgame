@@ -54,6 +54,16 @@ export function RoundEndScreen({
         </table>
       </div>
 
+      {publicState.nextStartingPlayerId && (
+        <p className="text-center text-sm text-white/50">
+          다음 게임은{" "}
+          <span className="font-semibold text-white/80">
+            {publicState.players[publicState.nextStartingPlayerId]?.nickname ?? "?"}
+          </span>
+          님부터 시작해요.
+        </p>
+      )}
+
       {isHost ? (
         <button
           type="button"
