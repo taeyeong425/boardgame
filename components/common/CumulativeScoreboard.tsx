@@ -1,6 +1,7 @@
 import { computeStandings } from "@/shared/scoring";
 
-export function ScoreboardPanel({
+/** Room-wide cumulative points leaderboard — game-agnostic, shared by every game's in-game UI. */
+export function CumulativeScoreboard({
   players,
   totals,
 }: {

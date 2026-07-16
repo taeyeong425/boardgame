@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { PenguinPartyClientState } from "../engine/clientView";
 import { getAllLegalPositions } from "../engine/pyramid";
@@ -9,7 +10,6 @@ import { OpponentStrip } from "./OpponentStrip";
 import { PlayerHand } from "./PlayerHand";
 import { PyramidView } from "./PyramidView";
 import { RoundResultOverlay } from "./RoundResultOverlay";
-import { ScoreboardPanel } from "./ScoreboardPanel";
 import { cardColorLabel } from "./cardColor";
 
 export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
@@ -84,7 +84,7 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
         onSelectCard={(id) => setSelectedCardId((cur) => (cur === id ? null : id))}
       />
 
-      <ScoreboardPanel players={state.players} totals={roomTotals} />
+      <CumulativeScoreboard players={state.players} totals={roomTotals} />
     </div>
   );
 }

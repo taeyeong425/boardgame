@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildFullDeck, dealRound, mulberry32 } from "../deck";
+import { mulberry32 } from "../../../../shared/rng";
+import { buildFullDeck, dealRound } from "../deck";
 
 describe("buildFullDeck", () => {
   it("has 36 cards with the correct theme distribution", () => {

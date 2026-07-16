@@ -18,3 +18,41 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* CSS 3D dice (Bluff) — a real cube built from 6 absolutely-positioned faces, rotated as a group
+ * to show whichever face landed face-up, with a brief tumble animation on a fresh roll. */
+.die-scene {
+  perspective: 400px;
+}
+.die-cube {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease-out;
+}
+.die-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 2px solid rgba(15, 23, 42, 0.25);
+  border-radius: 15%;
+  backface-visibility: hidden;
+  font-weight: 800;
+  color: #0f172a;
+}
+.die-face--star {
+  color: #dc2626;
+}
+@keyframes die-roll {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    transform: rotateX(720deg) rotateY(1080deg);
+  }
+}
+.die-rolling {
+  animation: die-roll 0.5s ease-in-out;
+}

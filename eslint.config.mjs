@@ -9,7 +9,12 @@ const eslintConfig = defineConfig([
     rules: {
       // Rest-destructure-to-omit-a-key (`const { x, ...rest } = obj`) is a deliberate pattern
       // used throughout the room server to strip a field immutably; the unused `x` is intentional.
-      "@typescript-eslint/no-unused-vars": ["warn", { ignoreRestSiblings: true }],
+      // Leading-underscore args/vars are the standard "intentionally unused" convention (e.g. a
+      // GameModule.autoMove implementation that doesn't need the playerId it's handed).
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { ignoreRestSiblings: true, argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.

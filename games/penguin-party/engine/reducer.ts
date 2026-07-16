@@ -1,5 +1,6 @@
+import { freshRng } from "../../../shared/rng";
 import type { Player } from "../../../shared/types";
-import { dealRound, hashSeed, mulberry32 } from "./deck";
+import { dealRound } from "./deck";
 import { computeLegalPlacements, hasLegalMove, isLegalPlacement } from "./pyramid";
 import type {
   Card,
@@ -18,12 +19,8 @@ function key(layer: number, index: number): string {
   return `${layer}:${index}`;
 }
 
-function freshSeed(): number {
-  return hashSeed(crypto.randomUUID());
-}
-
 function buildRound(roundNumber: number, startingPlayerId: PlayerId, turnOrder: PlayerId[]): RoundState {
-  const deal = dealRound(turnOrder, mulberry32(freshSeed()));
+  const deal = dealRound(turnOrder, freshRng());
   return {
     roundNumber,
     startingPlayerId,
