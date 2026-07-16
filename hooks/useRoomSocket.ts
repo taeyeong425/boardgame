@@ -27,11 +27,27 @@ function playerIdStorageKey(code: string): string {
   return `boardgame:playerId:${code}`;
 }
 
+/**
+ * crypto.randomUUID() only works in a secure context (HTTPS or localhost) — a phone opening the
+ * dev server over plain HTTP via its LAN IP (e.g. http://192.168.x.x:3000) doesn't have it, even
+ * though crypto.getRandomValues() (not subject to that restriction) is still available there.
+ */
+function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+}
+
 function getOrCreatePlayerId(code: string): string {
   const key = playerIdStorageKey(code);
   const existing = window.localStorage.getItem(key);
   if (existing) return existing;
-  const id = crypto.randomUUID();
+  const id = generateId();
   window.localStorage.setItem(key, id);
   return id;
 }
