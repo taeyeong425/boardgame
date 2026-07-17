@@ -1,8 +1,9 @@
 import type { DurableObjectState, WebSocket as CfWebSocket } from "@cloudflare/workers-types";
 import { getCatalogEntry } from "../shared/gameCatalog";
 import type { ClientMessage, ServerEvent } from "../shared/messages";
+import { freshRng } from "../shared/rng";
 import { buildScoreEntry, computeTotals } from "../shared/scoring";
-import type { GameId, Player, RoomState } from "../shared/types";
+import type { GameId, Player, RoomState, StartingDrawEntry } from "../shared/types";
 import { getGameModule } from "./games/registry";
 import { loadRoomState, saveRoomState } from "./room/persistence";
 import {
@@ -118,8 +119,11 @@ export class BoardgameRoom {
       const { rawScores, sortOrder, summary } = gameModule.computeResult(result.state);
       const entry = buildScoreEntry(state.currentGameId, rawScores, sortOrder, playerIds, summary);
       const scoreLedger = [...state.scoreLedger, entry];
-      // The rank-1 winner(s) of this game start first next game; ties broken by earliest-joined.
-      const nextStartingPlayerId = playerIds.find((id) => entry.ranks[id] === 1) ?? null;
+      // A game can define its own "next dealer" convention (e.g. Skull King: whoever won the
+      // final trick); otherwise the rank-1 winner(s) of this game start first next game, ties
+      // broken by earliest-joined.
+      const nextStartingPlayerId =
+        gameModule.getNextStartingPlayerId?.(result.state) ?? playerIds.find((id) => entry.ranks[id] === 1) ?? null;
       next = {
         ...next,
         // Land on "game-over" first (final board still visible, frozen) — the client explicitly
@@ -129,6 +133,7 @@ export class BoardgameRoom {
         totals: computeTotals(scoreLedger, playerIds),
         turnDeadline: null,
         nextStartingPlayerId,
+        startingPlayerDraw: null, // only ever relevant for the game that just started
       };
       await this.clearTurnAlarm();
     } else {
@@ -331,9 +336,27 @@ export class BoardgameRoom {
       return;
     }
 
-    const gameState = gameModule.createInitialState(players, state.nextStartingPlayerId);
+    // No prior game to carry a winner over from — draw for it visibly instead of picking silently.
+    let startingPlayerId = state.nextStartingPlayerId;
+    let startingPlayerDraw: StartingDrawEntry[] | null = null;
+    if (startingPlayerId === null || !players.some((p) => p.id === startingPlayerId)) {
+      const rng = freshRng();
+      const draws: StartingDrawEntry[] = players.map((p) => ({ playerId: p.id, value: 1 + Math.floor(rng() * 100) }));
+      const maxValue = Math.max(...draws.map((d) => d.value));
+      // draws preserves players' (earliest-joined-first) order, so the first max is the tie-break winner.
+      startingPlayerId = draws.find((d) => d.value === maxValue)!.playerId;
+      startingPlayerDraw = draws;
+    }
+
+    const gameState = gameModule.createInitialState(players, startingPlayerId);
     const deadline = Date.now() + TURN_TIMEOUT_MS;
-    const next: RoomState = { ...state, phase: "in-game", currentGameState: gameState, turnDeadline: deadline };
+    const next: RoomState = {
+      ...state,
+      phase: "in-game",
+      currentGameState: gameState,
+      turnDeadline: deadline,
+      startingPlayerDraw,
+    };
     await this.scheduleTurnAlarm(deadline);
     await saveRoomState(this.ctx, next);
     this.broadcastPublicState(next);

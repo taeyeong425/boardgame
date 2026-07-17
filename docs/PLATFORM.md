@@ -57,11 +57,15 @@ applies it exactly like a normal move (`party/index.ts`, `applyGameMove` / `onAl
 
 `RoomState.nextStartingPlayerId` is a hint passed into `GameModule.createInitialState(players,
 startingPlayerId?)`:
-- A fresh room's very first game has no prior winner, so it's picked randomly (each module's own
-  fallback).
-- Every game after that starts with the **previous game's rank-1 winner** (ties broken by
-  earliest-joined), set the moment a game ends. Shown to players in the lobby and on the results
-  screen so it's never a mystery who goes first.
+- A fresh room's very first game has no prior winner to carry over, so the server runs a visible
+  **card draw** instead of picking silently: every player gets a random 1-100 number
+  (`RoomState.startingPlayerDraw`), highest goes first (ties broken by earliest-joined). The client
+  shows this draw briefly (`StartingDrawReveal`) right as that first game begins.
+- Every game after that starts with **whoever the game itself says should deal next** — most games
+  don't care and default to the previous game's rank-1 winner (ties broken by earliest-joined), but
+  a `GameModule` can implement `getNextStartingPlayerId(state)` to use its own real-world
+  convention instead (see Skull King: whoever won the final trick). Shown to players in the lobby
+  and on the results screen so it's never a mystery who goes first.
 
 ## Host controls
 

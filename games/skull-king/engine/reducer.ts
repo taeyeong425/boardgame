@@ -164,6 +164,12 @@ export function computeResult(state: SkullKingState): { rawScores: Record<string
   return { rawScores: state.cumulativeScores, sortOrder: "desc", summary: `최고 점수: ${winnerName}` };
 }
 
+/** House convention: whoever wins the final trick of the game deals (and leads) the next one —
+ * not necessarily the same player as the score winner. */
+export function getNextStartingPlayerId(state: SkullKingState): PlayerId | null {
+  return state.lastTrickReveal?.trick.winnerId ?? null;
+}
+
 export function autoMove(state: SkullKingState, playerId: PlayerId): SkullKingMove {
   const round = state.round;
   if (round.phase === "bidding") return { type: "bid", value: 0 };

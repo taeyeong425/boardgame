@@ -13,7 +13,8 @@ export function createRoomState(code: string, hostPlayer: Player): RoomState {
     turnDeadline: null,
     scoreLedger: [],
     totals: {},
-    nextStartingPlayerId: null, // first game in a fresh room picks randomly (no prior winner yet)
+    nextStartingPlayerId: null, // first game in a fresh room draws for it (no prior winner yet)
+    startingPlayerDraw: null,
   };
 }
 

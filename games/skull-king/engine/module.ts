@@ -6,6 +6,7 @@ import {
   computeResult,
   createInitialState,
   getCurrentTurnPlayerId,
+  getNextStartingPlayerId,
   isGameOver,
 } from "./reducer";
 import type { SkullKingMove, SkullKingState } from "./types";
@@ -22,4 +23,5 @@ export const skullKingModule: GameModule<SkullKingState, SkullKingMove, SkullKin
   getCurrentTurnPlayerId,
   getClientView,
   autoMove,
+  getNextStartingPlayerId,
 };

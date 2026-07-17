@@ -78,7 +78,7 @@ export function LobbyScreen({
           <span className="font-semibold text-white/80">
             {publicState.players[publicState.nextStartingPlayerId]?.nickname ?? "?"}
           </span>
-          님부터 시작해요 (직전 게임 1등).
+          님부터 시작해요.
         </p>
       )}
 

@@ -5,6 +5,7 @@ import { gameUiRegistry } from "@/games/registry";
 import type { UseRoomSocketResult } from "@/hooks/useRoomSocket";
 import { LobbyScreen } from "../lobby/LobbyScreen";
 import { RoundEndScreen } from "./RoundEndScreen";
+import { StartingDrawReveal } from "./StartingDrawReveal";
 import { TurnTimerBadge } from "./TurnTimerBadge";
 
 export function GameShell({
@@ -70,8 +71,15 @@ export function GameShell({
     }
   }
 
+  const playerNames = Object.fromEntries(
+    Object.values(publicState.players).map((p) => [p.id, p.nickname])
+  );
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 px-3 py-4">
+    <div className="relative mx-auto flex min-h-dvh max-w-md flex-col gap-3 px-3 py-4">
+      {publicState.startingPlayerDraw && (
+        <StartingDrawReveal draw={publicState.startingPlayerDraw} playerNames={playerNames} />
+      )}
       {status !== "open" && <p className="text-center text-xs text-amber-400">연결 상태: {status}</p>}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">

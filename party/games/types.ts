@@ -50,4 +50,13 @@ export interface GameModule<TState = unknown, TMove = unknown, TClientState = TS
    * on a player who has at least one legal move, so this should never need to "pass").
    */
   autoMove(state: TState, playerId: string): TMove;
+
+  /**
+   * Optional override for who starts the *next* game in this room, called once right when
+   * isGameOver(state) flips true. Most games don't implement this — the room server defaults to
+   * the rank-1 score winner. A game with its own real-world "next dealer" convention (e.g. Skull
+   * King: whoever won the final trick) can return a different player id here instead, or null to
+   * fall back to the default.
+   */
+  getNextStartingPlayerId?(state: TState): string | null;
 }

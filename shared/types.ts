@@ -29,6 +29,11 @@ export interface ScoreEntry {
   summary?: string;
 }
 
+export interface StartingDrawEntry {
+  playerId: string;
+  value: number;
+}
+
 export interface RoomState {
   code: string;
   createdAt: number;
@@ -49,6 +54,13 @@ export interface RoomState {
    * the current game's roster).
    */
   nextStartingPlayerId: string | null;
+  /**
+   * The visible card-draw result that decided nextStartingPlayerId when there was no prior winner
+   * to carry over (a fresh room's very first game) — everyone draws a random number, highest
+   * goes first. Set the moment that draw happens, cleared again once that game ends, so it's only
+   * ever non-null right as the very first game starts.
+   */
+  startingPlayerDraw: StartingDrawEntry[] | null;
 }
 
 export interface GameCatalogEntry {

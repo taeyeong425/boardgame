@@ -5,6 +5,7 @@ import {
   computeResult,
   createInitialState,
   getCurrentTurnPlayerId,
+  getNextStartingPlayerId,
   isGameOver,
 } from "../reducer";
 import type { Card, SkullKingState } from "../types";
@@ -221,6 +222,32 @@ describe("computeResult", () => {
     expect(sortOrder).toBe("desc");
     expect(rawScores).toEqual({ p0: 20, p1: 10 });
     expect(summary).toContain("A");
+  });
+});
+
+describe("getNextStartingPlayerId", () => {
+  it("returns the winner of the most recent trick, even when that's not the score leader", () => {
+    // p0 wins the only trick (green-9 beats green-3) but both bid 0, so p0's missed bid (-10)
+    // actually scores worse than p1's correct zero-bid (+10) — score leader is p1, trick winner is p0.
+    const state = biddedState(
+      { kind: "number", id: "green-9", suit: "green", value: 9 },
+      { kind: "number", id: "green-3", suit: "green", value: 3 },
+      0,
+      0
+    );
+    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "green-9" });
+    if (!p0Plays.ok) throw new Error(p0Plays.error);
+    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "green-3" });
+    if (!p1Plays.ok) throw new Error(p1Plays.error);
+
+    expect(p1Plays.state.cumulativeScores).toEqual({ p0: -10, p1: 10 });
+    expect(p1Plays.state.lastTrickReveal?.trick.winnerId).toBe("p0");
+    expect(getNextStartingPlayerId(p1Plays.state)).toBe("p0");
+  });
+
+  it("returns null before any trick has been played", () => {
+    const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
+    expect(getNextStartingPlayerId(state)).toBeNull();
   });
 });
 

@@ -106,3 +106,7 @@ have qualified.
 After round 10, the game ends. Final rank is by cumulative total score across all 10 rounds
 (higher wins) — the platform converts this into cross-game rank points as usual, see
 [docs/PLATFORM.md](../PLATFORM.md). Ties share the platform's standard tie-handling.
+
+**Next dealer**: unlike the platform's default (previous game's score winner), Skull King follows
+its own real-world convention — whoever wins the **final trick** of the game deals (and leads) the
+next one, which isn't always the same player as the score winner.
