@@ -7,7 +7,6 @@ export interface SelfStripStatus {
   cardCount: number;
   eliminated: boolean;
   emptiedHand: boolean;
-  cumulativePenalty: number;
 }
 
 function StripCard({
@@ -16,7 +15,6 @@ function StripCard({
   cardCount,
   eliminated,
   emptiedHand,
-  cumulativePenalty,
   highlighted,
 }: {
   seatNumber: number;
@@ -24,7 +22,6 @@ function StripCard({
   cardCount: number;
   eliminated: boolean;
   emptiedHand: boolean;
-  cumulativePenalty: number;
   highlighted: boolean;
 }) {
   const showBacks = !eliminated && !emptiedHand && cardCount > 0;
@@ -53,7 +50,6 @@ function StripCard({
       )}
 
       <span className="text-white/70">{cardCount}장 남음</span>
-      <span className="text-white/50">벌점 {cumulativePenalty}</span>
     </div>
   );
 }
@@ -73,27 +69,34 @@ export function OpponentStrip({
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto p-1">
-      <StripCard
-        seatNumber={turnOrder.indexOf(selfPlayerId) + 1}
-        label="나"
-        cardCount={self.cardCount}
-        eliminated={self.eliminated}
-        emptiedHand={self.emptiedHand}
-        cumulativePenalty={self.cumulativePenalty}
-        highlighted={false}
-      />
-      {opponents.map((o) => (
-        <StripCard
-          key={o.playerId}
-          seatNumber={turnOrder.indexOf(o.playerId) + 1}
-          label={o.nickname}
-          cardCount={o.cardCount}
-          eliminated={o.eliminated}
-          emptiedHand={o.emptiedHand}
-          cumulativePenalty={o.cumulativePenalty}
-          highlighted={o.playerId === currentTurnPlayerId}
-        />
-      ))}
+      {turnOrder.map((id, i) => {
+        if (id === selfPlayerId) {
+          return (
+            <StripCard
+              key={id}
+              seatNumber={i + 1}
+              label="나"
+              cardCount={self.cardCount}
+              eliminated={self.eliminated}
+              emptiedHand={self.emptiedHand}
+              highlighted={false}
+            />
+          );
+        }
+        const o = opponents.find((op) => op.playerId === id);
+        if (!o) return null;
+        return (
+          <StripCard
+            key={id}
+            seatNumber={i + 1}
+            label={o.nickname}
+            cardCount={o.cardCount}
+            eliminated={o.eliminated}
+            emptiedHand={o.emptiedHand}
+            highlighted={o.playerId === currentTurnPlayerId}
+          />
+        );
+      })}
     </div>
   );
 }

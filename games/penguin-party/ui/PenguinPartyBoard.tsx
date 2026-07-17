@@ -42,7 +42,6 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
 
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
-  const myPenalty = state.players.find((p) => p.id === selfPlayerId)?.cumulativePenalty ?? 0;
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -66,7 +65,6 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
           cardCount: state.myHand.length,
           eliminated: state.myEliminated,
           emptiedHand: state.myEmptiedHand,
-          cumulativePenalty: myPenalty,
         }}
         turnOrder={state.turnOrder}
         selfPlayerId={selfPlayerId}

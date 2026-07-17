@@ -33,33 +33,42 @@ export function OpponentStatusStrip({
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto p-1">
-      <div
-        className={`flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs ${
-          isActive(roundPhase, self.bid === null, false) ? "border-sky-400 bg-sky-400/10" : "border-white/10"
-        }`}
-      >
-        <span className="text-[9px] text-white/40">{turnOrder.indexOf(selfPlayerId) + 1}번</span>
-        <span className="font-semibold">나</span>
-        <span className="text-white/70">🂠 {self.handCount}장</span>
-        <span className="text-white/70">🏆 {self.tricksWon}트릭</span>
-        <span className="text-white/40">{self.bid !== null ? `예측 ${self.bid}` : "예측 전"}</span>
-      </div>
-      {opponents.map((o) => (
-        <div
-          key={o.playerId}
-          className={`flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs ${
-            isActive(roundPhase, !o.bidSubmitted, o.playerId === currentTurnPlayerId)
-              ? "border-emerald-400 bg-emerald-400/10"
-              : "border-white/10"
-          }`}
-        >
-          <span className="text-[9px] text-white/40">{turnOrder.indexOf(o.playerId) + 1}번</span>
-          <span className="font-semibold">{o.nickname}</span>
-          <span className="text-white/70">🂠 {o.handCount}장</span>
-          <span className="text-white/70">🏆 {o.tricksWon}트릭</span>
-          <span className="text-white/40">{o.bid !== null ? `예측 ${o.bid}` : o.bidSubmitted ? "예측 완료 (비공개)" : "예측 중..."}</span>
-        </div>
-      ))}
+      {turnOrder.map((id, i) => {
+        if (id === selfPlayerId) {
+          return (
+            <div
+              key={id}
+              className={`flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs ${
+                isActive(roundPhase, self.bid === null, false) ? "border-sky-400 bg-sky-400/10" : "border-white/10"
+              }`}
+            >
+              <span className="text-[9px] text-white/40">{i + 1}번</span>
+              <span className="font-semibold">나</span>
+              <span className="text-white/70">🂠 {self.handCount}장</span>
+              <span className="text-white/70">🏆 {self.tricksWon}트릭</span>
+              <span className="text-white/40">{self.bid !== null ? `예측 ${self.bid}` : "예측 전"}</span>
+            </div>
+          );
+        }
+        const o = opponents.find((op) => op.playerId === id);
+        if (!o) return null;
+        return (
+          <div
+            key={id}
+            className={`flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs ${
+              isActive(roundPhase, !o.bidSubmitted, o.playerId === currentTurnPlayerId)
+                ? "border-emerald-400 bg-emerald-400/10"
+                : "border-white/10"
+            }`}
+          >
+            <span className="text-[9px] text-white/40">{i + 1}번</span>
+            <span className="font-semibold">{o.nickname}</span>
+            <span className="text-white/70">🂠 {o.handCount}장</span>
+            <span className="text-white/70">🏆 {o.tricksWon}트릭</span>
+            <span className="text-white/40">{o.bid !== null ? `예측 ${o.bid}` : o.bidSubmitted ? "예측 완료 (비공개)" : "예측 중..."}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
