@@ -11,9 +11,10 @@ const ROWS = [
 ];
 
 /** Explains why converting a bid between a numbered face and ★ changes the count — the physical
- * game's own board shows this same progression track. Collapsed by default to save space. */
+ * game's own board shows this same progression track. Open by default so it's visible while
+ * deciding a bid, not just on request. */
 export function BidReferenceBoard() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   return (
     <div className="rounded-lg border border-white/10">

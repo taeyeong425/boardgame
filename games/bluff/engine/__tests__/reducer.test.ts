@@ -155,7 +155,7 @@ describe("applyMove — challenge resolution", () => {
     expect(p0.eliminatedAtRound).toBe(1);
   });
 
-  it("exact match: everyone but the bidder loses 1, already-eliminated players are untouched", () => {
+  it("exact match: everyone but the challenger loses 1, already-eliminated players are untouched", () => {
     const threePlayerState: BluffState = {
       players: [
         { id: "p0", nickname: "A", diceCount: 5, eliminatedAtRound: null }, // bidder
@@ -179,11 +179,11 @@ describe("applyMove — challenge resolution", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const last = result.state.roundHistory[0];
-    expect(last.outcome).toBe("allButBidderLose");
+    expect(last.outcome).toBe("allButChallengerLose");
     expect(last.actualCount).toBe(4); // 1s+stars: p0 has two 1s, p1 has two 1s => 4
-    expect(last.diceLost).toEqual({ p1: 1 }); // p2 excluded (already at 0)
-    expect(result.state.players.find((p) => p.id === "p0")!.diceCount).toBe(5); // bidder untouched
-    expect(result.state.players.find((p) => p.id === "p1")!.diceCount).toBe(2);
+    expect(last.diceLost).toEqual({ p0: 1 }); // p2 excluded (already at 0), p1 (challenger) spared
+    expect(result.state.players.find((p) => p.id === "p0")!.diceCount).toBe(4);
+    expect(result.state.players.find((p) => p.id === "p1")!.diceCount).toBe(3); // challenger untouched
     expect(result.state.players.find((p) => p.id === "p2")!.diceCount).toBe(0);
   });
 

@@ -97,9 +97,11 @@ export function applyMove(state: BluffState, playerId: PlayerId, move: BluffMove
     outcome = "bidderLoses";
     diceLost[bidderId] = bid.count - actualCount;
   } else {
-    outcome = "allButBidderLose";
+    // House rule (deviates from the official "everyone but the bidder loses" rule — see
+    // docs/rules/bluff.md): the challenger is spared instead, since they're the one who acted.
+    outcome = "allButChallengerLose";
     for (const p of state.players) {
-      if (p.diceCount > 0 && p.id !== bidderId) diceLost[p.id] = 1;
+      if (p.diceCount > 0 && p.id !== playerId) diceLost[p.id] = 1;
     }
   }
 

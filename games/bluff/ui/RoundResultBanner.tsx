@@ -22,8 +22,8 @@ function outcomeLine(result: RoundResult, nicknames: Record<string, string>): st
       return `${bidderName}의 "${bidText}" 베팅 성공 — 블러프를 외친 ${challengerName}가 ${result.diceLost[result.challengerId]}개 잃음`;
     case "bidderLoses":
       return `${bidderName}의 "${bidText}" 베팅 실패 — ${bidderName}가 ${result.diceLost[result.bidderId]}개 잃음`;
-    case "allButBidderLose":
-      return `${bidderName}의 "${bidText}" 정확히 적중! — ${bidderName} 빼고 전원 1개씩 잃음`;
+    case "allButChallengerLose":
+      return `${bidderName}의 "${bidText}" 정확히 적중! — 블러프를 외친 ${challengerName}만 빼고 전원 1개씩 잃음`;
   }
 }
 

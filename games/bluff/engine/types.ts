@@ -40,7 +40,7 @@ export interface RoundResult {
   bidderId: PlayerId;
   bid: Bid;
   actualCount: number;
-  outcome: "challengerLoses" | "bidderLoses" | "allButBidderLose";
+  outcome: "challengerLoses" | "bidderLoses" | "allButChallengerLose";
   diceLost: Record<PlayerId, number>;
   /** Every player's roll at the moment of the challenge — public once revealed. */
   revealedRolls: Record<PlayerId, DieFace[]>;

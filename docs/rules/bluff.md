@@ -7,6 +7,12 @@ from a secondary summary) rather than assumed from the game's name or family res
 
 Source: https://namu.wiki/w/%EB%B8%94%EB%9F%AC%ED%94%84 (구성물/게임 규칙 sections)
 
+**House rule**: the official rule (confirmed from the source above) says that on an exact-match
+challenge, **everyone except the bidder** loses a die — including the challenger, who guessed
+wrong. This app instead spares the **challenger** (they're the one who acted) and has everyone
+else, including the bidder, lose a die each. See `games/bluff/engine/reducer.ts`'s
+`allButChallengerLose` outcome.
+
 ## Summary
 
 - 2-6 players. Components: 1 board (a bid-progress track + a 30-space tray for lost dice), 6 dice
@@ -33,7 +39,8 @@ Source: https://namu.wiki/w/%EB%B8%94%EB%9F%AC%ED%94%84 (구성물/게임 규칙
 - **Challenge**: everyone reveals their dice. Compare the bid's face-count against the bid:
   - Actual > bid (bid succeeded, challenge fails): the **challenger** loses `actual - bid` dice.
   - Actual < bid (bid failed, challenge succeeds): the **bidder** loses `bid - actual` dice.
-  - Actual == bid exactly (bid succeeded): **everyone except the bidder** loses 1 die each.
+  - Actual == bid exactly (bid succeeded): **everyone except the challenger** loses 1 die each
+    (house rule — see the note at the top of this doc).
 - Losing all dice eliminates a player. The next round starts with whoever just challenged — unless
   that challenge eliminated them, in which case the next active seat (table order) starts instead.
 - Last player with any dice left wins.
