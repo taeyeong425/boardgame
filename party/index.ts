@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import type { DurableObjectState, WebSocket as CfWebSocket } from "@cloudflare/workers-types";
 import { getCatalogEntry } from "../shared/gameCatalog";
 import type { ClientMessage, ServerEvent } from "../shared/messages";
 import { buildScoreEntry, computeTotals } from "../shared/scoring";
@@ -13,109 +13,155 @@ import {
   upsertPlayer,
   withHost,
 } from "./room/RoomState";
+import { parseRoomCodeFromPath } from "./roomRouting";
+
+// WebSocketPair is a Workers runtime global (like `fetch`/`Request`/`Response`), not something
+// the @cloudflare/workers-types package's type-only module actually exports at runtime — importing
+// it as a value fails to bundle. Declaring it locally gives the type without a real import.
+declare const WebSocketPair: new () => { 0: CfWebSocket; 1: CfWebSocket };
 
 const TURN_TIMEOUT_MS = 60_000;
 
+/** Attached to each WebSocket via serializeAttachment — survives the Durable Object hibernating
+ * and being re-instantiated between messages, same as PartyKit's connection.state used to. */
 interface ConnState {
+  connId: string;
   playerId: string | null;
   intent: "create" | "join";
+  roomCode: string;
 }
 
-function connState(connection: Party.Connection): ConnState | null {
-  return connection.state as unknown as ConnState | null;
+function connState(ws: CfWebSocket): ConnState | null {
+  return (ws.deserializeAttachment() as ConnState | null) ?? null;
 }
 
-function send(connection: Party.Connection, event: ServerEvent) {
-  connection.send(JSON.stringify(event));
+function setConnState(ws: CfWebSocket, state: ConnState) {
+  ws.serializeAttachment(state);
 }
 
-function broadcastPublicState(room: Party.Room, state: RoomState) {
-  const event: ServerEvent = { type: "roomState", state: toPublicRoomState(state) };
-  room.broadcast(JSON.stringify(event));
-}
-
-/** Sends every connected player their own per-player redacted view of the active game state. */
-function broadcastGameViews(room: Party.Room, state: RoomState) {
-  if (!state.currentGameId || state.currentGameState === null) return;
-  const gameModule = getGameModule(state.currentGameId);
-  if (!gameModule) return;
-  for (const connection of room.getConnections<ConnState>()) {
-    const cs = connState(connection);
-    if (!cs?.playerId) continue;
-    const view = gameModule.getClientView
-      ? gameModule.getClientView(state.currentGameState, cs.playerId)
-      : state.currentGameState;
-    send(connection, { type: "gameStateUpdated", state: view });
-  }
-}
-
-async function scheduleTurnAlarm(room: Party.Room, deadline: number) {
-  await room.storage.setAlarm(deadline);
-}
-
-async function clearTurnAlarm(room: Party.Room) {
-  await room.storage.deleteAlarm();
+function send(ws: CfWebSocket, event: ServerEvent) {
+  ws.send(JSON.stringify(event));
 }
 
 /**
- * Applies a single game move (real or auto-played on timeout) and folds in every consequence:
- * turn-timer rescheduling, and — the moment the game ends — converting raw scores into
- * cross-game rank/points via shared/scoring and appending them to the room's score ledger.
+ * One Durable Object instance per room (looked up by room code — see party/worker.ts). This is a
+ * direct port of the PartyKit-based room server to Cloudflare's own Durable Object + Hibernatable
+ * WebSockets API, so it can be deployed straight to a Cloudflare account without going through
+ * PartyKit's shared `partykit.dev` hosting.
  */
-async function applyGameMove(
-  room: Party.Room,
-  state: RoomState,
-  playerId: string,
-  move: unknown
-): Promise<{ state: RoomState; error?: string }> {
-  if (!state.currentGameId || state.currentGameState === null) {
-    return { state, error: "NO_ACTIVE_GAME" };
-  }
-  const gameModule = getGameModule(state.currentGameId);
-  if (!gameModule) return { state, error: "UNKNOWN_GAME" };
+export class BoardgameRoom {
+  constructor(private readonly ctx: DurableObjectState) {}
 
-  const result = gameModule.applyMove(state.currentGameState, playerId, move);
-  if (!result.ok) return { state, error: result.error };
-
-  let next: RoomState = { ...state, currentGameState: result.state };
-
-  if (gameModule.isGameOver(result.state)) {
-    const playerIds = orderedPlayers(state).map((p) => p.id);
-    const { rawScores, sortOrder, summary } = gameModule.computeResult(result.state);
-    const entry = buildScoreEntry(state.currentGameId, rawScores, sortOrder, playerIds, summary);
-    const scoreLedger = [...state.scoreLedger, entry];
-    // The rank-1 winner(s) of this game start first next game; ties broken by earliest-joined.
-    const nextStartingPlayerId = playerIds.find((id) => entry.ranks[id] === 1) ?? null;
-    next = {
-      ...next,
-      // Land on "game-over" first (final board still visible, frozen) — the client explicitly
-      // asks to move on to "round-end" (the rank/points breakdown) via showResults.
-      phase: "game-over",
-      scoreLedger,
-      totals: computeTotals(scoreLedger, playerIds),
-      turnDeadline: null,
-      nextStartingPlayerId,
-    };
-    await clearTurnAlarm(room);
-  } else {
-    const deadline = Date.now() + TURN_TIMEOUT_MS;
-    next = { ...next, turnDeadline: deadline };
-    await scheduleTurnAlarm(room, deadline);
+  private getSockets(): CfWebSocket[] {
+    return this.ctx.getWebSockets() as CfWebSocket[];
   }
 
-  return { state: next };
-}
+  private broadcast(event: ServerEvent, excludeConnIds: string[] = []) {
+    const payload = JSON.stringify(event);
+    for (const ws of this.getSockets()) {
+      const cs = connState(ws);
+      if (cs && excludeConnIds.includes(cs.connId)) continue;
+      ws.send(payload);
+    }
+  }
 
-export default class BoardgameRoom implements Party.Server {
-  constructor(readonly room: Party.Room) {}
+  private broadcastPublicState(state: RoomState) {
+    this.broadcast({ type: "roomState", state: toPublicRoomState(state) });
+  }
 
-  async onConnect(connection: Party.Connection, ctx: Party.ConnectionContext) {
-    const url = new URL(ctx.request.url);
+  /** Sends every connected player their own per-player redacted view of the active game state. */
+  private broadcastGameViews(state: RoomState) {
+    if (!state.currentGameId || state.currentGameState === null) return;
+    const gameModule = getGameModule(state.currentGameId);
+    if (!gameModule) return;
+    for (const ws of this.getSockets()) {
+      const cs = connState(ws);
+      if (!cs?.playerId) continue;
+      const view = gameModule.getClientView
+        ? gameModule.getClientView(state.currentGameState, cs.playerId)
+        : state.currentGameState;
+      send(ws, { type: "gameStateUpdated", state: view });
+    }
+  }
+
+  private async scheduleTurnAlarm(deadline: number) {
+    await this.ctx.storage.setAlarm(deadline);
+  }
+
+  private async clearTurnAlarm() {
+    await this.ctx.storage.deleteAlarm();
+  }
+
+  /**
+   * Applies a single game move (real or auto-played on timeout) and folds in every consequence:
+   * turn-timer rescheduling, and — the moment the game ends — converting raw scores into
+   * cross-game rank/points via shared/scoring and appending them to the room's score ledger.
+   */
+  private async applyGameMove(
+    state: RoomState,
+    playerId: string,
+    move: unknown
+  ): Promise<{ state: RoomState; error?: string }> {
+    if (!state.currentGameId || state.currentGameState === null) {
+      return { state, error: "NO_ACTIVE_GAME" };
+    }
+    const gameModule = getGameModule(state.currentGameId);
+    if (!gameModule) return { state, error: "UNKNOWN_GAME" };
+
+    const result = gameModule.applyMove(state.currentGameState, playerId, move);
+    if (!result.ok) return { state, error: result.error };
+
+    let next: RoomState = { ...state, currentGameState: result.state };
+
+    if (gameModule.isGameOver(result.state)) {
+      const playerIds = orderedPlayers(state).map((p) => p.id);
+      const { rawScores, sortOrder, summary } = gameModule.computeResult(result.state);
+      const entry = buildScoreEntry(state.currentGameId, rawScores, sortOrder, playerIds, summary);
+      const scoreLedger = [...state.scoreLedger, entry];
+      // The rank-1 winner(s) of this game start first next game; ties broken by earliest-joined.
+      const nextStartingPlayerId = playerIds.find((id) => entry.ranks[id] === 1) ?? null;
+      next = {
+        ...next,
+        // Land on "game-over" first (final board still visible, frozen) — the client explicitly
+        // asks to move on to "round-end" (the rank/points breakdown) via showResults.
+        phase: "game-over",
+        scoreLedger,
+        totals: computeTotals(scoreLedger, playerIds),
+        turnDeadline: null,
+        nextStartingPlayerId,
+      };
+      await this.clearTurnAlarm();
+    } else {
+      const deadline = Date.now() + TURN_TIMEOUT_MS;
+      next = { ...next, turnDeadline: deadline };
+      await this.scheduleTurnAlarm(deadline);
+    }
+
+    return { state: next };
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.headers.get("Upgrade") !== "websocket") {
+      return new Response("Expected websocket", { status: 426 });
+    }
+
+    const url = new URL(request.url);
+    const roomCode = parseRoomCodeFromPath(url.pathname);
+    if (!roomCode) return new Response("Not found", { status: 404 });
     const intent: ConnState["intent"] = url.searchParams.get("intent") === "create" ? "create" : "join";
-    connection.setState({ playerId: null, intent });
+
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
+
+    this.ctx.acceptWebSocket(server);
+    setConnState(server, { connId: crypto.randomUUID(), playerId: null, intent, roomCode });
+
+    // Cloudflare's Response constructor accepts a `webSocket` option that DOM's ResponseInit type
+    // doesn't know about — this is purely a typing gap, the runtime call is correct as-is.
+    return new Response(null, { status: 101, webSocket: client } as unknown as ResponseInit);
   }
 
-  async onMessage(message: string | ArrayBuffer | ArrayBufferView, sender: Party.Connection) {
+  async webSocketMessage(ws: CfWebSocket, message: string | ArrayBuffer) {
     if (typeof message !== "string") return;
     let parsed: ClientMessage;
     try {
@@ -126,36 +172,40 @@ export default class BoardgameRoom implements Party.Server {
 
     switch (parsed.type) {
       case "join":
-        return this.handleJoin(sender, parsed.playerId, parsed.nickname);
+        return this.handleJoin(ws, parsed.playerId, parsed.nickname);
       case "rejoin":
-        return this.handleRejoin(sender, parsed.playerId);
+        return this.handleRejoin(ws, parsed.playerId);
       case "leave":
-        return this.handleDisconnect(sender);
+        return this.handleDisconnect(ws);
       case "selectGame":
-        return this.handleSelectGame(sender, parsed.gameId);
+        return this.handleSelectGame(ws, parsed.gameId);
       case "startGame":
-        return this.handleStartGame(sender);
+        return this.handleStartGame(ws);
       case "gameAction":
-        return this.handleGameAction(sender, parsed.action);
+        return this.handleGameAction(ws, parsed.action);
       case "backToLobby":
-        return this.handleBackToLobby(sender);
+        return this.handleBackToLobby(ws);
       case "kickPlayer":
-        return this.handleKickPlayer(sender, parsed.playerId);
+        return this.handleKickPlayer(ws, parsed.playerId);
       case "transferHost":
-        return this.handleTransferHost(sender, parsed.playerId);
+        return this.handleTransferHost(ws, parsed.playerId);
       case "changeNickname":
-        return this.handleChangeNickname(sender, parsed.nickname);
+        return this.handleChangeNickname(ws, parsed.nickname);
       case "showResults":
-        return this.handleShowResults(sender);
+        return this.handleShowResults(ws);
     }
   }
 
-  async onClose(connection: Party.Connection) {
-    await this.handleDisconnect(connection);
+  async webSocketClose(ws: CfWebSocket) {
+    await this.handleDisconnect(ws);
   }
 
-  async onAlarm() {
-    const state = await loadRoomState(this.room);
+  async webSocketError(ws: CfWebSocket) {
+    await this.handleDisconnect(ws);
+  }
+
+  async alarm() {
+    const state = await loadRoomState(this.ctx);
     if (!state || state.phase !== "in-game" || !state.currentGameId || state.currentGameState === null) return;
     const gameModule = getGameModule(state.currentGameId);
     if (!gameModule) return;
@@ -163,120 +213,117 @@ export default class BoardgameRoom implements Party.Server {
     if (!currentPlayerId) return;
 
     const move = gameModule.autoMove(state.currentGameState, currentPlayerId);
-    const { state: next } = await applyGameMove(this.room, state, currentPlayerId, move);
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
-    broadcastGameViews(this.room, next);
+    const { state: next } = await this.applyGameMove(state, currentPlayerId, move);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
+    this.broadcastGameViews(next);
   }
 
-  private async handleJoin(sender: Party.Connection, playerId: string, nickname: string) {
-    const cs = connState(sender);
-    let state = await loadRoomState(this.room);
+  private async handleJoin(ws: CfWebSocket, playerId: string, nickname: string) {
+    const cs = connState(ws);
+    if (!cs) return;
+    let state = await loadRoomState(this.ctx);
 
     if (!state) {
-      if (cs?.intent !== "create") {
-        send(sender, { type: "error", code: "NOT_FOUND", message: "Room does not exist." });
-        sender.close();
+      if (cs.intent !== "create") {
+        send(ws, { type: "error", code: "NOT_FOUND", message: "Room does not exist." });
+        ws.close();
         return;
       }
       const hostPlayer: Player = {
         id: playerId,
         nickname,
-        connectionId: sender.id,
+        connectionId: cs.connId,
         connected: true,
         isHost: true,
         joinedAt: Date.now(),
       };
-      state = createRoomState(this.room.id, hostPlayer);
+      state = createRoomState(cs.roomCode, hostPlayer);
     } else {
       const existing = state.players[playerId];
       const player: Player = existing
-        ? { ...existing, connectionId: sender.id, connected: true, nickname }
-        : { id: playerId, nickname, connectionId: sender.id, connected: true, isHost: false, joinedAt: Date.now() };
+        ? { ...existing, connectionId: cs.connId, connected: true, nickname }
+        : { id: playerId, nickname, connectionId: cs.connId, connected: true, isHost: false, joinedAt: Date.now() };
       state = upsertPlayer(state, player);
       state = promoteHostIfNeeded(state);
     }
 
-    sender.setState({ playerId, intent: cs?.intent ?? "join" });
-    await saveRoomState(this.room, state);
-    broadcastPublicState(this.room, state);
-    broadcastGameViews(this.room, state);
+    setConnState(ws, { ...cs, playerId });
+    await saveRoomState(this.ctx, state);
+    this.broadcastPublicState(state);
+    this.broadcastGameViews(state);
   }
 
-  private async handleRejoin(sender: Party.Connection, playerId: string) {
-    const state = await loadRoomState(this.room);
+  private async handleRejoin(ws: CfWebSocket, playerId: string) {
+    const cs = connState(ws);
+    const state = await loadRoomState(this.ctx);
     if (!state || !state.players[playerId]) {
-      send(sender, { type: "error", code: "NOT_FOUND", message: "No such player in this room." });
+      send(ws, { type: "error", code: "NOT_FOUND", message: "No such player in this room." });
       return;
     }
-    let next = upsertPlayer(state, { ...state.players[playerId], connectionId: sender.id, connected: true });
+    let next = upsertPlayer(state, { ...state.players[playerId], connectionId: cs?.connId ?? null, connected: true });
     next = promoteHostIfNeeded(next);
 
-    sender.setState({ playerId, intent: "join" });
-    await saveRoomState(this.room, next);
+    if (cs) setConnState(ws, { ...cs, playerId, intent: "join" });
+    await saveRoomState(this.ctx, next);
 
-    send(sender, { type: "roomState", state: toPublicRoomState(next) });
+    send(ws, { type: "roomState", state: toPublicRoomState(next) });
     if (next.currentGameId && next.currentGameState !== null) {
       const gameModule = getGameModule(next.currentGameId);
       const view = gameModule?.getClientView
         ? gameModule.getClientView(next.currentGameState, playerId)
         : next.currentGameState;
-      send(sender, { type: "gameStateUpdated", state: view });
+      send(ws, { type: "gameStateUpdated", state: view });
     }
 
-    this.room.broadcast(
-      JSON.stringify({ type: "playerConnectionChanged", playerId, connected: true } satisfies ServerEvent),
-      [sender.id]
-    );
+    this.broadcast({ type: "playerConnectionChanged", playerId, connected: true }, [cs?.connId ?? ""]);
   }
 
-  private async handleDisconnect(connection: Party.Connection) {
-    const cs = connState(connection);
+  private async handleDisconnect(ws: CfWebSocket) {
+    const cs = connState(ws);
     if (!cs?.playerId) return;
-    const state = await loadRoomState(this.room);
+    const state = await loadRoomState(this.ctx);
     if (!state || !state.players[cs.playerId]) return;
 
     let next = upsertPlayer(state, { ...state.players[cs.playerId], connected: false, connectionId: null });
     next = promoteHostIfNeeded(next);
-    await saveRoomState(this.room, next);
+    await saveRoomState(this.ctx, next);
 
-    this.room.broadcast(
-      JSON.stringify({ type: "playerConnectionChanged", playerId: cs.playerId, connected: false } satisfies ServerEvent)
-    );
-    broadcastPublicState(this.room, next);
+    this.broadcast({ type: "playerConnectionChanged", playerId: cs.playerId, connected: false });
+    this.broadcastPublicState(next);
   }
 
-  private async handleSelectGame(sender: Party.Connection, gameId: GameId) {
-    const { state } = await this.requireHost(sender);
+  private async handleSelectGame(ws: CfWebSocket, gameId: GameId) {
+    const { state } = await this.requireHost(ws);
     if (!state) return;
 
     const catalogEntry = getCatalogEntry(gameId);
     if (!catalogEntry || !catalogEntry.implemented) {
-      send(sender, { type: "error", code: "GAME_NOT_AVAILABLE", message: "This game isn't implemented yet." });
+      send(ws, { type: "error", code: "GAME_NOT_AVAILABLE", message: "This game isn't implemented yet." });
       return;
     }
     const next: RoomState = { ...state, currentGameId: gameId };
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
   }
 
-  private async handleStartGame(sender: Party.Connection) {
-    const { state } = await this.requireHost(sender);
+  private async handleStartGame(ws: CfWebSocket) {
+    const { state } = await this.requireHost(ws);
     if (!state) return;
 
     if (state.phase !== "lobby" || !state.currentGameId) {
-      send(sender, { type: "error", code: "INVALID_STATE", message: "Pick a game before starting." });
+      send(ws, { type: "error", code: "INVALID_STATE", message: "Pick a game before starting." });
       return;
     }
     const gameModule = getGameModule(state.currentGameId);
     const catalogEntry = getCatalogEntry(state.currentGameId);
     if (!gameModule || !catalogEntry) {
-      send(sender, { type: "error", code: "GAME_NOT_AVAILABLE", message: "This game isn't implemented yet." });
+      send(ws, { type: "error", code: "GAME_NOT_AVAILABLE", message: "This game isn't implemented yet." });
       return;
     }
     const players = orderedPlayers(state);
     if (players.length < catalogEntry.minPlayers || players.length > catalogEntry.maxPlayers) {
-      send(sender, {
+      send(ws, {
         type: "error",
         code: "PLAYER_COUNT",
         message: `${catalogEntry.displayName} needs ${catalogEntry.minPlayers}-${catalogEntry.maxPlayers} players.`,
@@ -287,128 +334,126 @@ export default class BoardgameRoom implements Party.Server {
     const gameState = gameModule.createInitialState(players, state.nextStartingPlayerId);
     const deadline = Date.now() + TURN_TIMEOUT_MS;
     const next: RoomState = { ...state, phase: "in-game", currentGameState: gameState, turnDeadline: deadline };
-    await scheduleTurnAlarm(this.room, deadline);
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
-    broadcastGameViews(this.room, next);
+    await this.scheduleTurnAlarm(deadline);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
+    this.broadcastGameViews(next);
   }
 
-  private async handleGameAction(sender: Party.Connection, action: unknown) {
-    const cs = connState(sender);
+  private async handleGameAction(ws: CfWebSocket, action: unknown) {
+    const cs = connState(ws);
     if (!cs?.playerId) return;
-    const state = await loadRoomState(this.room);
+    const state = await loadRoomState(this.ctx);
     if (!state || state.phase !== "in-game") {
-      send(sender, { type: "error", code: "INVALID_STATE", message: "No game in progress." });
+      send(ws, { type: "error", code: "INVALID_STATE", message: "No game in progress." });
       return;
     }
 
-    const { state: next, error } = await applyGameMove(this.room, state, cs.playerId, action);
+    const { state: next, error } = await this.applyGameMove(state, cs.playerId, action);
     if (error) {
-      send(sender, { type: "error", code: error, message: error });
+      send(ws, { type: "error", code: error, message: error });
       return;
     }
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
-    broadcastGameViews(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
+    this.broadcastGameViews(next);
   }
 
-  private async handleBackToLobby(sender: Party.Connection) {
-    const { state } = await this.requireHost(sender);
+  private async handleBackToLobby(ws: CfWebSocket) {
+    const { state } = await this.requireHost(ws);
     if (!state) return;
 
     // Allowed after a round naturally ends, during the game-over intermission, and mid-game (so
     // the host can bail out of a game early, e.g. someone has to leave) — abandoning mid-game
     // intentionally records no score entry.
     if (state.phase !== "round-end" && state.phase !== "game-over" && state.phase !== "in-game") {
-      send(sender, { type: "error", code: "INVALID_STATE", message: "No game to leave right now." });
+      send(ws, { type: "error", code: "INVALID_STATE", message: "No game to leave right now." });
       return;
     }
-    if (state.phase === "in-game") await clearTurnAlarm(this.room);
+    if (state.phase === "in-game") await this.clearTurnAlarm();
     const next: RoomState = { ...state, phase: "lobby", currentGameId: null, currentGameState: null, turnDeadline: null };
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
   }
 
-  private async handleKickPlayer(sender: Party.Connection, targetPlayerId: string) {
-    const { state } = await this.requireHost(sender);
+  private async handleKickPlayer(ws: CfWebSocket, targetPlayerId: string) {
+    const { state } = await this.requireHost(ws);
     if (!state) return;
 
     if (state.phase !== "lobby") {
-      send(sender, { type: "error", code: "INVALID_STATE", message: "Can only remove players from the lobby." });
+      send(ws, { type: "error", code: "INVALID_STATE", message: "Can only remove players from the lobby." });
       return;
     }
     if (targetPlayerId === state.hostPlayerId) {
-      send(sender, { type: "error", code: "CANNOT_KICK_HOST", message: "The host can't kick themselves." });
+      send(ws, { type: "error", code: "CANNOT_KICK_HOST", message: "The host can't kick themselves." });
       return;
     }
     const { [targetPlayerId]: _removed, ...players } = state.players;
     let next: RoomState = { ...state, players };
     next = promoteHostIfNeeded(next);
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
 
     // The removed player keeps their own stale connection/state until explicitly told and
     // disconnected — otherwise their client would just silently sit in a broken lobby view.
-    for (const connection of this.room.getConnections<ConnState>()) {
-      if (connState(connection)?.playerId === targetPlayerId) {
-        send(connection, { type: "kicked" });
-        connection.close();
+    for (const other of this.getSockets()) {
+      if (connState(other)?.playerId === targetPlayerId) {
+        send(other, { type: "kicked" });
+        other.close();
       }
     }
   }
 
-  private async handleTransferHost(sender: Party.Connection, targetPlayerId: string) {
-    const { state } = await this.requireHost(sender);
+  private async handleTransferHost(ws: CfWebSocket, targetPlayerId: string) {
+    const { state } = await this.requireHost(ws);
     if (!state) return;
 
     if (state.phase !== "lobby") {
-      send(sender, { type: "error", code: "INVALID_STATE", message: "Can only hand off host from the lobby." });
+      send(ws, { type: "error", code: "INVALID_STATE", message: "Can only hand off host from the lobby." });
       return;
     }
     if (!state.players[targetPlayerId]) {
-      send(sender, { type: "error", code: "NOT_FOUND", message: "No such player." });
+      send(ws, { type: "error", code: "NOT_FOUND", message: "No such player." });
       return;
     }
     const next = withHost(state, targetPlayerId);
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
   }
 
-  private async handleChangeNickname(sender: Party.Connection, nickname: string) {
-    const cs = connState(sender);
+  private async handleChangeNickname(ws: CfWebSocket, nickname: string) {
+    const cs = connState(ws);
     if (!cs?.playerId) return;
     const trimmed = nickname.trim().slice(0, 16);
     if (!trimmed) return;
 
-    const state = await loadRoomState(this.room);
+    const state = await loadRoomState(this.ctx);
     if (!state || !state.players[cs.playerId]) return;
     const next = upsertPlayer(state, { ...state.players[cs.playerId], nickname: trimmed });
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
   }
 
-  private async handleShowResults(sender: Party.Connection) {
-    const cs = connState(sender);
+  private async handleShowResults(ws: CfWebSocket) {
+    const cs = connState(ws);
     if (!cs?.playerId) return;
-    const state = await loadRoomState(this.room);
+    const state = await loadRoomState(this.ctx);
     if (!state || !state.players[cs.playerId]) return;
 
     if (state.phase !== "game-over") return; // no-op if someone else already advanced it
     const next: RoomState = { ...state, phase: "round-end" };
-    await saveRoomState(this.room, next);
-    broadcastPublicState(this.room, next);
+    await saveRoomState(this.ctx, next);
+    this.broadcastPublicState(next);
   }
 
-  private async requireHost(sender: Party.Connection): Promise<{ state: RoomState | null }> {
-    const cs = connState(sender);
+  private async requireHost(ws: CfWebSocket): Promise<{ state: RoomState | null }> {
+    const cs = connState(ws);
     if (!cs?.playerId) return { state: null };
-    const state = await loadRoomState(this.room);
+    const state = await loadRoomState(this.ctx);
     if (!state || state.hostPlayerId !== cs.playerId) {
-      send(sender, { type: "error", code: "NOT_HOST", message: "Only the host can do that." });
+      send(ws, { type: "error", code: "NOT_HOST", message: "Only the host can do that." });
       return { state: null };
     }
     return { state };
   }
 }
-
-BoardgameRoom satisfies Party.Worker;

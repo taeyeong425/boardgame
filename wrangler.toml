@@ -1,0 +1,11 @@
+name = "boardgame-room"
+main = "party/worker.ts"
+compatibility_date = "2026-07-16"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "BoardgameRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BoardgameRoom"]
