@@ -1,6 +1,7 @@
 "use client";
 
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
+import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
 import { BidControls } from "./BidControls";
@@ -19,6 +20,7 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
   const totalDiceRemaining =
     state.myDiceCount + state.opponents.reduce((sum, o) => sum + o.diceCount, 0);
+  const eliminatedIds = state.opponents.filter((o) => o.eliminated).map((o) => o.playerId);
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -31,10 +33,21 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
         </span>
       </div>
 
-      <OpponentDiceStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
+      <TurnOrderIndicator
+        turnOrder={state.turnOrder}
+        playerNames={playerNames}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        selfPlayerId={selfPlayerId}
+        eliminatedIds={state.myEliminated ? [...eliminatedIds, selfPlayerId] : eliminatedIds}
+      />
 
       <RulesPanel />
-      <BidReferenceBoard />
+
+      <OpponentDiceStrip
+        opponents={state.opponents}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        self={{ diceCount: state.myDiceCount, eliminated: state.myEliminated }}
+      />
 
       <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} totalDiceRemaining={totalDiceRemaining} />
 
@@ -54,6 +67,8 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
         onBid={(bid) => sendAction({ type: "placeBid", count: bid.count, face: bid.face })}
         onChallenge={() => sendAction({ type: "challenge" })}
       />
+
+      <BidReferenceBoard />
 
       <CumulativeScoreboard players={state.players} totals={roomTotals} />
     </div>

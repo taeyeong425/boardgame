@@ -1,6 +1,7 @@
 "use client";
 
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
+import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { LasVegasClientState } from "../engine/clientView";
 import { CasinoBoard } from "./CasinoBoard";
@@ -57,9 +58,20 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
         <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
       </div>
 
+      <TurnOrderIndicator
+        turnOrder={state.turnOrder}
+        playerNames={playerNames}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        selfPlayerId={selfPlayerId}
+      />
+
       <RulesPanel />
 
-      <OpponentStatusStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
+      <OpponentStatusStrip
+        opponents={state.opponents}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        self={{ diceRemaining: state.myDiceRemaining, billCount: state.myBills.length }}
+      />
 
       <div className="grid grid-cols-2 gap-2">
         {state.casinos.map((c) => (

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
+import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { PenguinPartyClientState } from "../engine/clientView";
 import { getAllLegalPositions } from "../engine/pyramid";
@@ -42,6 +43,8 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
 
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
+  const myPenalty = state.players.find((p) => p.id === selfPlayerId)?.cumulativePenalty ?? 0;
+  const eliminatedIds = state.opponents.filter((o) => o.eliminated).map((o) => o.playerId);
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -56,15 +59,32 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
         </span>
       </div>
 
+      <TurnOrderIndicator
+        turnOrder={state.turnOrder}
+        playerNames={playerNames}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        selfPlayerId={selfPlayerId}
+        eliminatedIds={state.myEliminated ? [...eliminatedIds, selfPlayerId] : eliminatedIds}
+      />
+
+      <RulesPanel />
+
+      <OpponentStrip
+        opponents={state.opponents}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        self={{
+          cardCount: state.myHand.length,
+          eliminated: state.myEliminated,
+          emptiedHand: state.myEmptiedHand,
+          cumulativePenalty: myPenalty,
+        }}
+      />
+
       {state.revealedExtraCard && (
         <p className="text-xs text-white/50">
           공개 카드({cardColorLabel(state.revealedExtraCard.color)}) — 이번 라운드에는 사용되지 않아요.
         </p>
       )}
-
-      <RulesPanel />
-
-      <OpponentStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 
       <PyramidView
         pyramid={state.pyramid}

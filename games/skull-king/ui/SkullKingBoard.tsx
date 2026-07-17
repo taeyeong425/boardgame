@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
+import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { SkullKingClientState } from "../engine/clientView";
 import { legalCardIds } from "../engine/trick";
@@ -12,6 +13,7 @@ import { CardLegend } from "./CardLegend";
 import { HandView } from "./HandView";
 import { OpponentStatusStrip } from "./OpponentStatusStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
+import { RulesPanel } from "./RulesPanel";
 import { SkullKingScoreboard } from "./SkullKingScoreboard";
 import { TrickRevealOverlay } from "./TrickRevealOverlay";
 import { TrickTable } from "./TrickTable";
@@ -96,6 +98,28 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
         <span className="font-semibold">{turnStatusText}</span>
       </div>
 
+      <TurnOrderIndicator
+        turnOrder={state.turnOrder}
+        playerNames={playerNames}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        selfPlayerId={selfPlayerId}
+      />
+
+      <RulesPanel />
+
+      <OpponentStatusStrip
+        opponents={state.opponents}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        roundPhase={state.roundPhase}
+        self={{ handCount: state.myHand.length, tricksWon: state.myTricksWon, bid: state.myBid }}
+      />
+
+      {state.roundPhase === "playing" && <TrickTable trick={state.currentTrick} playerNames={playerNames} />}
+
+      {state.roundPhase === "bidding" && (
+        <div className="text-center text-xs text-white/50">베팅 완료: {biddedCount}/{state.players.length}명</div>
+      )}
+
       <div>
         <p className="mb-1 text-center text-xs text-white/50">
           내 손패
@@ -110,20 +134,6 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
         )}
       </div>
 
-      <CardLegend />
-
-      <OpponentStatusStrip
-        opponents={state.opponents}
-        currentTurnPlayerId={state.currentTurnPlayerId}
-        roundPhase={state.roundPhase}
-        self={{ handCount: state.myHand.length, tricksWon: state.myTricksWon, bid: state.myBid }}
-      />
-
-      {state.roundPhase === "playing" && <TrickTable trick={state.currentTrick} playerNames={playerNames} />}
-
-      {state.roundPhase === "bidding" && (
-        <div className="text-center text-xs text-white/50">베팅 완료: {biddedCount}/{state.players.length}명</div>
-      )}
       <BidControls
         maxBid={state.roundNumber}
         playable={!pendingReveal && state.roundPhase === "bidding" && state.myBid === null}
@@ -151,6 +161,8 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
           </div>
         </div>
       )}
+
+      <CardLegend />
 
       <SkullKingScoreboard players={state.players} roundHistory={state.roundHistory} cumulativeScores={state.cumulativeScores} />
       <CumulativeScoreboard players={state.players} totals={roomTotals} />
