@@ -4,6 +4,7 @@ import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
 import { BidControls } from "./BidControls";
+import { BidProgressTrack } from "./BidProgressTrack";
 import { BidReferenceBoard } from "./BidReferenceBoard";
 import { DiceHand } from "./DiceHand";
 import { bidReadout } from "./faceDisplay";
@@ -46,6 +47,8 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
           <span className="text-lg text-white/40">아직 베팅 없음 — 첫 베팅을 기다리는 중</span>
         )}
       </div>
+
+      <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} />
 
       {state.myEliminated && <p className="text-center text-sm text-red-300">탈락 — 주사위를 모두 잃었어요.</p>}
 
