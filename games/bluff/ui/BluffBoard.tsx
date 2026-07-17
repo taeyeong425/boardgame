@@ -7,7 +7,6 @@ import { BidControls } from "./BidControls";
 import { BidProgressTrack } from "./BidProgressTrack";
 import { BidReferenceBoard } from "./BidReferenceBoard";
 import { DiceHand } from "./DiceHand";
-import { bidReadout } from "./faceDisplay";
 import { OpponentDiceStrip } from "./OpponentDiceStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
 import { RulesPanel } from "./RulesPanel";
@@ -18,7 +17,8 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
   const isMyTurn = state.currentTurnPlayerId === selfPlayerId && !state.myEliminated;
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
-  const lastBidderName = state.lastBidderId ? (playerNames[state.lastBidderId] ?? "?") : null;
+  const totalDiceRemaining =
+    state.myDiceCount + state.opponents.reduce((sum, o) => sum + o.diceCount, 0);
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -36,19 +36,7 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
       <RulesPanel />
       <BidReferenceBoard />
 
-      <div className="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-4">
-        <span className="text-xs text-white/50">현재 베팅</span>
-        {state.currentBid ? (
-          <span className="text-2xl font-bold">
-            {bidReadout(state.currentBid.count, state.currentBid.face)}
-            {lastBidderName && <span className="ml-2 text-sm font-normal text-white/50">({lastBidderName})</span>}
-          </span>
-        ) : (
-          <span className="text-lg text-white/40">아직 베팅 없음 — 첫 베팅을 기다리는 중</span>
-        )}
-      </div>
-
-      <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} />
+      <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} totalDiceRemaining={totalDiceRemaining} />
 
       {state.myEliminated && <p className="text-center text-sm text-red-300">탈락 — 주사위를 모두 잃었어요.</p>}
 
