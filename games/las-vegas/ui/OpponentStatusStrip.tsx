@@ -17,10 +17,7 @@ export function OpponentStatusStrip({
           }`}
         >
           <span className="font-semibold">{o.nickname}</span>
-          <span className="text-white/70">
-            🎲 {o.ownDiceRemaining}
-            {o.houseDiceRemaining > 0 && ` +${o.houseDiceRemaining}`}
-          </span>
+          <span className="text-white/70">🎲 {o.diceRemaining}</span>
           <span className="text-white/40">💵 {o.billCount}장 (비공개)</span>
         </div>
       ))}

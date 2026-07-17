@@ -24,15 +24,13 @@ function RollingDie({ face, size }: { face: CasinoNumber; size: number }) {
 
 export function RollControls({
   pendingRoll,
-  ownDiceRemaining,
-  houseDiceRemaining,
+  diceRemaining,
   playable,
   onRoll,
   onPlaceFace,
 }: {
   pendingRoll: PendingRollFaceGroup[] | null;
-  ownDiceRemaining: number;
-  houseDiceRemaining: number;
+  diceRemaining: number;
   playable: boolean;
   onRoll: () => void;
   onPlaceFace: (face: CasinoNumber) => void;
@@ -44,10 +42,7 @@ export function RollControls({
   if (pendingRoll === null) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-lg border border-white/10 p-3">
-        <p className="text-xs text-white/50">
-          내 주사위 {ownDiceRemaining + houseDiceRemaining}개 (내 것 {ownDiceRemaining}
-          {houseDiceRemaining > 0 && ` + 중립 ${houseDiceRemaining}`})
-        </p>
+        <p className="text-xs text-white/50">내 주사위 {diceRemaining}개</p>
         <button
           type="button"
           onClick={onRoll}
@@ -61,7 +56,7 @@ export function RollControls({
 
   // Identifies this specific roll's outcome (not just its position in the array) so the dice
   // remount — and tumble again — only on an actual fresh roll, not on unrelated re-renders.
-  const rollKey = pendingRoll.map((g) => `${g.face}:${g.ownCount}:${g.houseCount}`).join("|");
+  const rollKey = pendingRoll.map((g) => `${g.face}:${g.count}`).join("|");
 
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-emerald-400/40 bg-emerald-400/10 p-3">
@@ -76,15 +71,12 @@ export function RollControls({
             className="flex flex-col items-center gap-1 rounded-lg border border-white/20 bg-white/5 p-2 active:scale-95 disabled:opacity-40"
           >
             <div className="flex gap-1">
-              {Array.from({ length: group.ownCount }).map((_, i) => (
-                <RollingDie key={`${rollKey}-own-${i}`} face={group.face} size={28} />
-              ))}
-              {Array.from({ length: group.houseCount }).map((_, i) => (
-                <RollingDie key={`${rollKey}-house-${i}`} face={group.face} size={28} />
+              {Array.from({ length: group.count }).map((_, i) => (
+                <RollingDie key={`${rollKey}-${i}`} face={group.face} size={28} />
               ))}
             </div>
             <span className="text-xs font-semibold">
-              {group.ownCount + group.houseCount}개를 {group.face} 카지노에
+              {group.count}개를 {group.face} 카지노에
             </span>
           </button>
         ))}

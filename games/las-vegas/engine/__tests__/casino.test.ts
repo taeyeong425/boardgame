@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveCasino } from "../casino";
-import { HOUSE, type CasinoState } from "../types";
+import type { CasinoState } from "../types";
 
 function casino(diceCounts: CasinoState["diceCounts"], bills: number[]): CasinoState {
   return { number: 3, bills: bills.map((value) => ({ value })), diceCounts };
@@ -34,12 +34,6 @@ describe("resolveCasino", () => {
     expect(result.eliminatedOwners.sort()).toEqual(["anna", "benno", "carla", "denny"]);
     expect(result.awarded).toEqual([]);
     expect(result.recycled).toEqual([{ value: 50000 }]);
-  });
-
-  it("recycles a bill awarded to the house pseudo-player instead of paying it out", () => {
-    const result = resolveCasino(casino({ [HOUSE]: 5, real: 3 }, [90000, 20000]));
-    expect(result.awarded).toEqual([{ owner: "real", bill: { value: 20000 } }]);
-    expect(result.recycled).toEqual([{ value: 90000 }]); // house "won" the top bill, discarded
   });
 
   it("gives extra survivors nothing when there are more players than bills", () => {

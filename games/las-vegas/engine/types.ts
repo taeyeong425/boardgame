@@ -1,11 +1,6 @@
 export type CasinoNumber = 1 | 2 | 3 | 4 | 5 | 6;
 export type PlayerId = string;
 
-/** The neutral "house" pseudo-player used in the 2-4 player variant — competes for majority at
- * every casino like a real player, but any winnings it "earns" are discarded, not paid out. */
-export const HOUSE = "house" as const;
-export type Owner = PlayerId | typeof HOUSE;
-
 export interface Bill {
   value: number; // one of 10000..90000 in 10000 steps
 }
@@ -13,13 +8,12 @@ export interface Bill {
 export interface CasinoState {
   number: CasinoNumber;
   bills: Bill[];
-  diceCounts: Partial<Record<Owner, number>>;
+  diceCounts: Partial<Record<PlayerId, number>>;
 }
 
 export interface PendingRollFaceGroup {
   face: CasinoNumber;
-  ownCount: number;
-  houseCount: number;
+  count: number;
 }
 
 export interface PlayerGameState {
@@ -27,16 +21,15 @@ export interface PlayerGameState {
   nickname: string;
   /** Every bill won across the whole game — hidden from opponents until the game ends. */
   bills: Bill[];
-  ownDiceRemaining: number;
-  houseDiceRemaining: number;
+  diceRemaining: number;
 }
 
 export interface CasinoPayout {
   casinoNumber: CasinoNumber;
-  /** Owners tied at the same dice count at this casino — eliminated, no payout. */
-  eliminatedOwners: Owner[];
-  /** In descending bill-value order, one bill per qualifying owner. */
-  awarded: { owner: Owner; bill: Bill }[];
+  /** Players tied at the same dice count at this casino — eliminated, no payout. */
+  eliminatedOwners: PlayerId[];
+  /** In descending bill-value order, one bill per qualifying player. */
+  awarded: { owner: PlayerId; bill: Bill }[];
   /** Leftover bills nobody qualified for — returned to the bottom of the deck. */
   recycled: Bill[];
 }
@@ -67,8 +60,6 @@ export interface LasVegasState {
   /** Single-round variant (house rule): the whole game is one dice-and-payout cycle instead of
    * the official game's 4 rounds. */
   totalRounds: 1;
-  /** True for 2-4 players (the official variant); false for 5 (base game, no house dice). */
-  neutralDiceEnabled: boolean;
   phase: GamePhase;
 }
 

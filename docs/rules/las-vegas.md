@@ -2,10 +2,17 @@
 
 Rüdiger Dorn design, published by alea. 2-5 players. Implemented.
 
-**House rule**: this app plays a **single round** instead of the official game's 4 rounds — one
-full cash-refill → roll-and-place → payout cycle, then the game ends. Everything below describes
-what happens within that one round; the official game just repeats it 4 times with dice reset and
-the start player rotating each time.
+**House rules**: this app makes two deliberate deviations from the official rules:
+
+1. A **single round** instead of the official game's 4 rounds — one full cash-refill →
+   roll-and-place → payout cycle, then the game ends. Everything below describes what happens
+   within that one round; the official game just repeats it 4 times with dice reset and the start
+   player rotating each time.
+2. **No neutral/"house" dice.** The official game gives 2-4 player games a shared pool of extra
+   dice (not owned by anyone) to make majorities harder to lock in. This app skips that entirely —
+   every player only ever rolls and places their own 8 dice, regardless of player count. This
+   keeps the rules simpler to explain to new players and makes every die on the board unambiguously
+   "someone's bet."
 
 Sources:
 - https://namu.wiki/w/%EB%9D%BC%EC%8A%A4%EB%B2%A0%EA%B0%80%EC%8A%A4(%EB%B3%B4%EB%93%9C%EA%B2%8C%EC%9E%84)
@@ -15,8 +22,7 @@ Sources:
 
 - 6 casinos, numbered 1-6.
 - 54 bills total: $10k×6, $20k×8, $30k×8, $40k×6, $50k×6, $60k×5, $70k×5, $80k×5, $90k×5.
-- Each player has 8 own dice (all same color). A shared pool of neutral/"house" dice exists for
-  2-4 player games (see below); 5-player games use no neutral dice.
+- Each player has 8 dice (all same color) — no neutral/"house" dice (see the house rule above).
 
 ## Round setup
 
@@ -24,13 +30,7 @@ Sources:
   through all 6, until every casino has **at least $50,000** stacked on it, then stop (a casino
   may end up with more than one bill and more than $50k once the last bill that pushes it over is
   dealt).
-- Determine each player's neutral ("house") dice for this round:
-  - 2 players: 4 house dice each.
-  - 3 players: 2 house dice each, **except the round's starting player gets 4** (absorbs the
-    "leftover 2 dice" rule from the physical game, where neutral dice are dealt out among players
-    and don't divide evenly).
-  - 4 players: 2 house dice each.
-  - 5 players: 0 house dice (no neutral dice used at all).
+- Every player starts the round with 8 dice.
 - The starting player is chosen randomly (or carried over from the previous game in the room, per
   the platform-wide `nextStartingPlayerId` rule — see [docs/PLATFORM.md](../PLATFORM.md)).
 
@@ -38,13 +38,11 @@ Sources:
 
 On your turn you take one of these two actions:
 
-1. **Roll**: roll every die you have not yet placed this round (your own remaining dice + your
-   remaining house dice, all at once). Dice are grouped by face value (1-6) and everyone at the
-   table sees the result.
+1. **Roll**: roll every die you have not yet placed this round, all at once. Dice are grouped by
+   face value (1-6) and everyone at the table sees the result.
 2. **Place a face**: having just rolled, choose ONE face value from your pending roll. Every die
-   showing that face (both your own-color dice and house dice) is placed onto the casino with the
-   matching number, split into "your dice" vs. "house dice" on that casino's dice tally. Those
-   dice are now committed for the rest of the round — you cannot re-roll them.
+   showing that face is placed onto the casino with the matching number, added to your dice tally
+   at that casino. Those dice are now committed for the rest of the round — you cannot re-roll them.
 
 After placing, if you still have unplaced dice, it becomes the next player's turn; you'll roll
 your remaining dice again on your next turn. If you have none left, your turn is skipped for the
@@ -55,17 +53,14 @@ out.
 
 For each casino:
 
-1. Group all placed dice by owner (a player, or the shared house/neutral pool) and count dice per
-   owner.
-2. **Any owner whose dice count ties with another owner at that casino is eliminated from that
+1. Group all placed dice by owning player and count dice per player.
+2. **Any player whose dice count ties with another player at that casino is eliminated from that
    casino's payout** — ties cancel each other out, no matter how high the tied count is.
-3. Rank the remaining (non-tied) owners by dice count, descending.
+3. Rank the remaining (non-tied) players by dice count, descending.
 4. Award the casino's bills to survivors highest-count-first: the highest bill(s) go to the
-   top-ranked owner, working down. If house/neutral dice out-rank everyone (or win by having the
-   most dice with no player tying it), the money it "wins" is simply removed from play (the house
-   doesn't collect money).
-5. Any bills left unclaimed (because every owner tied, or because the house won them) simply go
-   unawarded — there's no later round left to redeal them into.
+   top-ranked player, working down.
+5. Any bills left unclaimed (because every player tied) simply go unawarded — there's no later
+   round left to redeal them into.
 
 This resolution logic is verified against the two worked examples in the official rulebook
 (a 5/3/3/1 dice split where the tied 3s are eliminated; a 2/2/1/1 split where everyone ties and
@@ -83,14 +78,3 @@ the whole casino's cash is voided).
 - Money won is kept face-down/private in the physical game; the app hides opponents' bill values
   the same way (only bill *count* is visible) until the final payout, when everyone's money is
   revealed for the final standings.
-
-## What "중립" (neutral) means
-
-The 🏠/"중립" dice tally you see at each casino, and the "중립 N개" count in your own roll, are the
-shared **house/neutral dice** described above under Round setup — a communal pool of extra dice
-(not owned by any player) that gets divided up among 2-4 player games to make majorities harder to
-lock in. They roll and get placed exactly like a player's own dice and can win (or force a tie
-elimination) at a casino, but any money they "win" is simply discarded instead of paid out — so a
-casino where the neutral pool comes out on top is often a casino nobody actually profits from.
-5-player games skip neutral dice entirely (see Components above), since with 5 real players there's
-already enough natural competition for majority at each casino.

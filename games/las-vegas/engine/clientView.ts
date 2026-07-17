@@ -11,8 +11,7 @@ import type {
 export interface OpponentDiceStatus {
   playerId: PlayerId;
   nickname: string;
-  ownDiceRemaining: number;
-  houseDiceRemaining: number;
+  diceRemaining: number;
   /** Face-down pile height is visible in the physical game — the bill VALUES are not. */
   billCount: number;
 }
@@ -28,14 +27,12 @@ export interface LasVegasClientState {
   roundNumber: number;
   totalRounds: number;
   phase: GamePhase;
-  neutralDiceEnabled: boolean;
   players: { id: PlayerId; nickname: string }[];
   casinos: CasinoState[]; // fully public — dice and bills on the table are visible to everyone
   turnOrder: PlayerId[];
   currentTurnPlayerId: PlayerId | null;
   pendingRoll: PendingRollFaceGroup[] | null; // public — everyone watches every roll happen
-  myOwnDiceRemaining: number;
-  myHouseDiceRemaining: number;
+  myDiceRemaining: number;
   myBills: Bill[];
   myTotalMoney: number;
   opponents: OpponentDiceStatus[];
@@ -52,14 +49,12 @@ export function getClientView(state: LasVegasState, forPlayerId: PlayerId): LasV
     roundNumber: round.roundNumber,
     totalRounds: state.totalRounds,
     phase: state.phase,
-    neutralDiceEnabled: state.neutralDiceEnabled,
     players: state.players.map((p) => ({ id: p.id, nickname: p.nickname })),
     casinos: round.casinos,
     turnOrder: round.turnOrder,
     currentTurnPlayerId: state.phase === "gameOver" ? null : round.turnOrder[round.currentTurnIndex],
     pendingRoll: round.pendingRoll,
-    myOwnDiceRemaining: self?.ownDiceRemaining ?? 0,
-    myHouseDiceRemaining: self?.houseDiceRemaining ?? 0,
+    myDiceRemaining: self?.diceRemaining ?? 0,
     myBills: self?.bills ?? [],
     myTotalMoney: (self?.bills ?? []).reduce((sum, b) => sum + b.value, 0),
     opponents: state.players
@@ -67,8 +62,7 @@ export function getClientView(state: LasVegasState, forPlayerId: PlayerId): LasV
       .map((p) => ({
         playerId: p.id,
         nickname: p.nickname,
-        ownDiceRemaining: p.ownDiceRemaining,
-        houseDiceRemaining: p.houseDiceRemaining,
+        diceRemaining: p.diceRemaining,
         billCount: p.bills.length,
       })),
     roundHistory: state.roundHistory,

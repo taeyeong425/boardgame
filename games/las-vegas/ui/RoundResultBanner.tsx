@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HOUSE, type RoundResult } from "../engine/types";
+import type { RoundResult } from "../engine/types";
 
 function formatBill(value: number): string {
   return `$${value / 1000}k`;
@@ -27,7 +27,7 @@ function RoundResultBannerInner({ result, playerNames }: { result: RoundResult; 
   }, []);
   if (!visible) return null;
 
-  const nameOf = (owner: string) => (owner === HOUSE ? "🏠(중립)" : (playerNames[owner] ?? "?"));
+  const nameOf = (owner: string) => playerNames[owner] ?? "?";
 
   return (
     <div

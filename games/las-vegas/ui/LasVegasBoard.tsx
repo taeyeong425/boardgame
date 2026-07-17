@@ -70,8 +70,7 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
 
       <RollControls
         pendingRoll={state.pendingRoll}
-        ownDiceRemaining={state.myOwnDiceRemaining}
-        houseDiceRemaining={state.myHouseDiceRemaining}
+        diceRemaining={state.myDiceRemaining}
         playable={isMyTurn}
         onRoll={() => sendAction({ type: "roll" })}
         onPlaceFace={(face) => sendAction({ type: "placeFace", face })}

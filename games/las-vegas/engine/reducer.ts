@@ -2,8 +2,7 @@ import { freshRng } from "../../../shared/rng";
 import type { Player } from "../../../shared/types";
 import { refillCasinos, shuffleBillDeck } from "./billDeck";
 import { resolveCasino } from "./casino";
-import { neutralDiceForPlayer, rollFace } from "./dice";
-import { HOUSE } from "./types";
+import { rollFace } from "./dice";
 import type {
   Bill,
   CasinoNumber,
@@ -26,14 +25,9 @@ function buildRound(
   roundNumber: number,
   startPlayerId: PlayerId,
   turnOrder: PlayerId[],
-  deck: Bill[],
-  neutralDiceEnabled: boolean
-): { round: RoundState; deck: Bill[]; houseDiceByPlayer: Record<PlayerId, number> } {
+  deck: Bill[]
+): { round: RoundState; deck: Bill[] } {
   const { casinos, deck: remainingDeck } = refillCasinos(emptyCasinos(), deck);
-  const houseDiceByPlayer: Record<PlayerId, number> = {};
-  for (const id of turnOrder) {
-    houseDiceByPlayer[id] = neutralDiceEnabled ? neutralDiceForPlayer(turnOrder.length, id === startPlayerId) : 0;
-  }
   const round: RoundState = {
     roundNumber,
     casinos,
@@ -42,26 +36,24 @@ function buildRound(
     startPlayerId,
     pendingRoll: null,
   };
-  return { round, deck: remainingDeck, houseDiceByPlayer };
+  return { round, deck: remainingDeck };
 }
 
 export function createInitialState(players: Player[], startingPlayerId?: string | null): LasVegasState {
   const turnOrder = players.map((p) => p.id);
-  const neutralDiceEnabled = turnOrder.length >= 2 && turnOrder.length <= 4;
   const resolvedStart =
     startingPlayerId && turnOrder.includes(startingPlayerId)
       ? startingPlayerId
       : turnOrder[Math.floor(Math.random() * turnOrder.length)];
 
   const deck = shuffleBillDeck(freshRng());
-  const built = buildRound(1, resolvedStart, turnOrder, deck, neutralDiceEnabled);
+  const built = buildRound(1, resolvedStart, turnOrder, deck);
 
   const playerStates: PlayerGameState[] = players.map((p) => ({
     id: p.id,
     nickname: p.nickname,
     bills: [],
-    ownDiceRemaining: 8,
-    houseDiceRemaining: built.houseDiceByPlayer[p.id],
+    diceRemaining: 8,
   }));
 
   return {
@@ -70,7 +62,6 @@ export function createInitialState(players: Player[], startingPlayerId?: string 
     round: built.round,
     roundHistory: [],
     totalRounds: 1,
-    neutralDiceEnabled,
     phase: "rolling",
   };
 }
@@ -83,7 +74,7 @@ function nextActiveIndex(turnOrder: PlayerId[], players: PlayerGameState[], from
   for (let step = 0; step < n; step++) {
     idx = (idx + 1) % n;
     const p = players.find((pl) => pl.id === turnOrder[idx]);
-    if (p && p.ownDiceRemaining + p.houseDiceRemaining > 0) return idx;
+    if (p && p.diceRemaining > 0) return idx;
   }
   return fromIndex;
 }
@@ -97,24 +88,16 @@ export function applyMove(state: LasVegasState, playerId: PlayerId, move: LasVeg
 
   if (move.type === "roll") {
     if (round.pendingRoll !== null) return { ok: false, error: "ALREADY_ROLLED" };
-    if (player.ownDiceRemaining + player.houseDiceRemaining === 0) return { ok: false, error: "NO_DICE_LEFT" };
+    if (player.diceRemaining === 0) return { ok: false, error: "NO_DICE_LEFT" };
 
     const rng = freshRng();
-    const groups = new Map<CasinoNumber, { ownCount: number; houseCount: number }>();
-    for (let i = 0; i < player.ownDiceRemaining; i++) {
+    const groups = new Map<CasinoNumber, number>();
+    for (let i = 0; i < player.diceRemaining; i++) {
       const face = rollFace(rng);
-      const g = groups.get(face) ?? { ownCount: 0, houseCount: 0 };
-      g.ownCount++;
-      groups.set(face, g);
-    }
-    for (let i = 0; i < player.houseDiceRemaining; i++) {
-      const face = rollFace(rng);
-      const g = groups.get(face) ?? { ownCount: 0, houseCount: 0 };
-      g.houseCount++;
-      groups.set(face, g);
+      groups.set(face, (groups.get(face) ?? 0) + 1);
     }
     const pendingRoll: PendingRollFaceGroup[] = [...groups.entries()]
-      .map(([face, g]) => ({ face, ...g }))
+      .map(([face, count]) => ({ face, count }))
       .sort((a, b) => a.face - b.face);
 
     return { ok: true, state: { ...state, round: { ...round, pendingRoll } } };
@@ -128,22 +111,15 @@ export function applyMove(state: LasVegasState, playerId: PlayerId, move: LasVeg
   const casinos = round.casinos.map((c) => {
     if (c.number !== move.face) return c;
     const diceCounts = { ...c.diceCounts };
-    diceCounts[playerId] = (diceCounts[playerId] ?? 0) + group.ownCount;
-    if (group.houseCount > 0) diceCounts[HOUSE] = (diceCounts[HOUSE] ?? 0) + group.houseCount;
+    diceCounts[playerId] = (diceCounts[playerId] ?? 0) + group.count;
     return { ...c, diceCounts };
   });
 
   const players = state.players.map((p) =>
-    p.id === playerId
-      ? {
-          ...p,
-          ownDiceRemaining: p.ownDiceRemaining - group.ownCount,
-          houseDiceRemaining: p.houseDiceRemaining - group.houseCount,
-        }
-      : p
+    p.id === playerId ? { ...p, diceRemaining: p.diceRemaining - group.count } : p
   );
 
-  const anyoneHasDice = players.some((p) => p.ownDiceRemaining + p.houseDiceRemaining > 0);
+  const anyoneHasDice = players.some((p) => p.diceRemaining > 0);
 
   if (!anyoneHasDice) {
     // Round over: resolve every casino, award/recycle bills, then either end the game or deal
@@ -169,18 +145,8 @@ export function applyMove(state: LasVegasState, playerId: PlayerId, move: LasVeg
 
     const nextStartIndex = (round.turnOrder.indexOf(round.startPlayerId) + 1) % round.turnOrder.length;
     const nextStartId = round.turnOrder[nextStartIndex];
-    const nextBuilt = buildRound(
-      round.roundNumber + 1,
-      nextStartId,
-      round.turnOrder,
-      deckWithRecycled,
-      state.neutralDiceEnabled
-    );
-    const resetPlayers = updatedPlayers.map((p) => ({
-      ...p,
-      ownDiceRemaining: 8,
-      houseDiceRemaining: nextBuilt.houseDiceByPlayer[p.id],
-    }));
+    const nextBuilt = buildRound(round.roundNumber + 1, nextStartId, round.turnOrder, deckWithRecycled);
+    const resetPlayers = updatedPlayers.map((p) => ({ ...p, diceRemaining: 8 }));
 
     return {
       ok: true,

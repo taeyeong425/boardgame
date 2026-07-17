@@ -14,50 +14,14 @@ function player(id: string, nickname: string) {
 }
 
 describe("createInitialState", () => {
-  it("gives every player 8 own dice and starts in the rolling phase", () => {
+  it("gives every player 8 dice and starts in the rolling phase", () => {
     const players = [player("p0", "A"), player("p1", "B")];
     const state = createInitialState(players);
     expect(state.phase).toBe("rolling");
     expect(state.totalRounds).toBe(1);
     expect(state.round.roundNumber).toBe(1);
-    for (const p of state.players) expect(p.ownDiceRemaining).toBe(8);
+    for (const p of state.players) expect(p.diceRemaining).toBe(8);
     expect(getCurrentTurnPlayerId(state)).not.toBeNull();
-  });
-
-  it("enables the neutral-dice variant only for 2-4 players", () => {
-    expect(createInitialState([player("a", "A"), player("b", "B")]).neutralDiceEnabled).toBe(true);
-    expect(
-      createInitialState([player("a", "A"), player("b", "B"), player("c", "C")]).neutralDiceEnabled
-    ).toBe(true);
-    expect(
-      createInitialState(
-        [player("a", "A"), player("b", "B"), player("c", "C"), player("d", "D")]
-      ).neutralDiceEnabled
-    ).toBe(true);
-    expect(
-      createInitialState(
-        [player("a", "A"), player("b", "B"), player("c", "C"), player("d", "D"), player("e", "E")]
-      ).neutralDiceEnabled
-    ).toBe(false);
-  });
-
-  it("gives 2 players 4 house dice each; 5 players get none", () => {
-    const two = createInitialState([player("a", "A"), player("b", "B")]);
-    for (const p of two.players) expect(p.houseDiceRemaining).toBe(4);
-
-    const five = createInitialState(
-      [player("a", "A"), player("b", "B"), player("c", "C"), player("d", "D"), player("e", "E")]
-    );
-    for (const p of five.players) expect(p.houseDiceRemaining).toBe(0);
-  });
-
-  it("gives the round's start player the 3-player leftover dice (4 vs 2 for others)", () => {
-    const players = [player("a", "A"), player("b", "B"), player("c", "C")];
-    const state = createInitialState(players, "b");
-    const starter = state.players.find((p) => p.id === "b")!;
-    const others = state.players.filter((p) => p.id !== "b");
-    expect(starter.houseDiceRemaining).toBe(4);
-    for (const o of others) expect(o.houseDiceRemaining).toBe(2);
   });
 
   it("honors a valid startingPlayerId hint and falls back to random otherwise", () => {
@@ -113,7 +77,7 @@ describe("applyMove — error paths", () => {
 });
 
 describe("applyMove — roll then placeFace", () => {
-  it("moves rolled dice (own + house) onto the chosen casino and clears the pending roll", () => {
+  it("moves rolled dice onto the chosen casino and clears the pending roll", () => {
     const state = baseTwoPlayerState();
     const rolled = applyMove(state, "p0", { type: "roll" });
     expect(rolled.ok).toBe(true);
@@ -127,12 +91,10 @@ describe("applyMove — roll then placeFace", () => {
 
     expect(placed.state.round.pendingRoll).toBeNull();
     const casino = placed.state.round.casinos.find((c) => c.number === group.face)!;
-    expect(casino.diceCounts.p0).toBe(group.ownCount);
-    if (group.houseCount > 0) expect(casino.diceCounts.house).toBe(group.houseCount);
+    expect(casino.diceCounts.p0).toBe(group.count);
 
     const p0 = placed.state.players.find((p) => p.id === "p0")!;
-    expect(p0.ownDiceRemaining).toBe(8 - group.ownCount);
-    expect(p0.houseDiceRemaining).toBe(4 - group.houseCount);
+    expect(p0.diceRemaining).toBe(8 - group.count);
 
     // turn advances to the other player
     expect(getCurrentTurnPlayerId(placed.state)).toBe("p1");

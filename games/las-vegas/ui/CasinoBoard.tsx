@@ -1,4 +1,4 @@
-import { HOUSE, type CasinoState } from "../engine/types";
+import type { CasinoState } from "../engine/types";
 
 function formatBill(value: number): string {
   return `$${value / 1000}k`;
@@ -37,7 +37,7 @@ export function CasinoBoard({
                 owner === selfPlayerId ? "bg-sky-500/30 text-sky-100" : "bg-white/10 text-white/70"
               }`}
             >
-              {owner === HOUSE ? "🏠" : (playerNames[owner] ?? "?")} {count}
+              {playerNames[owner] ?? "?"} {count}
               🎲
             </span>
           ))}
