@@ -52,10 +52,7 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
     <div className="relative flex flex-col gap-3">
       <RoundResultBanner result={state.roundHistory[state.roundHistory.length - 1]} playerNames={playerNames} />
 
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-white/60">
-          라운드 {state.roundNumber}/{state.totalRounds}
-        </span>
+      <div className="flex items-center justify-end text-sm">
         <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
       </div>
 

@@ -69,7 +69,7 @@ export function createInitialState(players: Player[], startingPlayerId?: string 
     billDeck: built.deck,
     round: built.round,
     roundHistory: [],
-    totalRounds: 4,
+    totalRounds: 1,
     neutralDiceEnabled,
     phase: "rolling",
   };

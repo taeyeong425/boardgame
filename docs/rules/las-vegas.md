@@ -2,6 +2,11 @@
 
 Rüdiger Dorn design, published by alea. 2-5 players. Implemented.
 
+**House rule**: this app plays a **single round** instead of the official game's 4 rounds — one
+full cash-refill → roll-and-place → payout cycle, then the game ends. Everything below describes
+what happens within that one round; the official game just repeats it 4 times with dice reset and
+the start player rotating each time.
+
 Sources:
 - https://namu.wiki/w/%EB%9D%BC%EC%8A%A4%EB%B2%A0%EA%B0%80%EC%8A%A4(%EB%B3%B4%EB%93%9C%EA%B2%8C%EC%9E%84)
 - https://www.koreaboardgames.com/product/detail?prdCd=PD2024002324AGQI
@@ -26,10 +31,8 @@ Sources:
     and don't divide evenly).
   - 4 players: 2 house dice each.
   - 5 players: 0 house dice (no neutral dice used at all).
-- The very first round's starting player is chosen randomly (or carried over from the previous
-  game in the room, per the platform-wide `nextStartingPlayerId` rule — see
-  [docs/PLATFORM.md](../PLATFORM.md)). Each subsequent round's starting player is the next player
-  in turn order after the previous round's starter.
+- The starting player is chosen randomly (or carried over from the previous game in the room, per
+  the platform-wide `nextStartingPlayerId` rule — see [docs/PLATFORM.md](../PLATFORM.md)).
 
 ## Turn structure
 
@@ -61,21 +64,33 @@ For each casino:
    top-ranked owner, working down. If house/neutral dice out-rank everyone (or win by having the
    most dice with no player tying it), the money it "wins" is simply removed from play (the house
    doesn't collect money).
-5. Any bills left unclaimed (because every owner tied, or because the house won them) go back to
-   the bottom of the bill deck to be redealt in a later round.
+5. Any bills left unclaimed (because every owner tied, or because the house won them) simply go
+   unawarded — there's no later round left to redeal them into.
 
 This resolution logic is verified against the two worked examples in the official rulebook
 (a 5/3/3/1 dice split where the tied 3s are eliminated; a 2/2/1/1 split where everyone ties and
-the whole casino's cash is voided for that round).
+the whole casino's cash is voided).
 
 ## Game length and scoring
 
-- 4 rounds per game. After round 4, the game ends.
+- One round (see the house rule at the top of this doc). Once every player has placed all their
+  dice, all 6 casinos pay out and the game ends immediately.
 - Each player's raw score is `totalMoney × 1000 + billCount` (a tiebreaker so a player with more
   total cash always outranks one with less, and among equal cash the player holding more
   individual bills — usually a sign of a broader win spread — ranks slightly higher).
 - Sort order is descending (higher money wins). The platform converts this into cross-game rank
   points as usual — see [docs/PLATFORM.md](../PLATFORM.md).
-- Money won each round is kept face-down/private in the physical game; the app hides opponents'
-  bill values the same way (only bill *count* is visible) until the final round-4 payout, when
-  everyone's money is revealed for the final standings.
+- Money won is kept face-down/private in the physical game; the app hides opponents' bill values
+  the same way (only bill *count* is visible) until the final payout, when everyone's money is
+  revealed for the final standings.
+
+## What "중립" (neutral) means
+
+The 🏠/"중립" dice tally you see at each casino, and the "중립 N개" count in your own roll, are the
+shared **house/neutral dice** described above under Round setup — a communal pool of extra dice
+(not owned by any player) that gets divided up among 2-4 player games to make majorities harder to
+lock in. They roll and get placed exactly like a player's own dice and can win (or force a tie
+elimination) at a casino, but any money they "win" is simply discarded instead of paid out — so a
+casino where the neutral pool comes out on top is often a casino nobody actually profits from.
+5-player games skip neutral dice entirely (see Components above), since with 5 real players there's
+already enough natural competition for majority at each casino.

@@ -7,20 +7,21 @@ function player(id: string, nickname: string) {
 }
 
 describe("getClientView", () => {
-  it("hides opponents' bill values, exposing only a count, while a game is in progress", () => {
+  it("hides opponents' bill values, exposing only a count, while the round is still in progress", () => {
     const players = [player("p0", "A"), player("p1", "B")];
     let state = createInitialState(players, "p0");
-    // Play until at least one bill has been awarded, so there's something to potentially leak.
-    let guard = 0;
-    while (state.roundHistory.length === 0) {
-      guard++;
-      if (guard > 5000) throw new Error("did not terminate");
+    // With only one round, bills are only ever awarded exactly when the game ends — so there's no
+    // "a bill was awarded but the game continues" state to reach anymore. A few turns in (each
+    // player starts with 12 dice, far more than 3 roll/place cycles can exhaust) is enough to
+    // exercise the redaction path while still clearly mid-round.
+    for (let i = 0; i < 6 && !isGameOver(state); i++) {
       const current = getCurrentTurnPlayerId(state)!;
       const move = autoMove(state, current);
       const result = applyMove(state, current, move);
       if (!result.ok) throw new Error(result.error);
       state = result.state;
     }
+    expect(isGameOver(state)).toBe(false);
 
     for (const viewer of players) {
       const view = getClientView(state, viewer.id);

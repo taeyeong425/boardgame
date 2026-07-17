@@ -18,7 +18,7 @@ describe("createInitialState", () => {
     const players = [player("p0", "A"), player("p1", "B")];
     const state = createInitialState(players);
     expect(state.phase).toBe("rolling");
-    expect(state.totalRounds).toBe(4);
+    expect(state.totalRounds).toBe(1);
     expect(state.round.roundNumber).toBe(1);
     for (const p of state.players) expect(p.ownDiceRemaining).toBe(8);
     expect(getCurrentTurnPlayerId(state)).not.toBeNull();
@@ -140,7 +140,7 @@ describe("applyMove — roll then placeFace", () => {
 });
 
 describe("full game (autoMove every turn)", () => {
-  it("always terminates after exactly 4 rounds for 2-5 players, with a well-formed result", () => {
+  it("always terminates after exactly 1 round for 2-5 players, with a well-formed result", () => {
     for (let n = 2; n <= 5; n++) {
       const players = Array.from({ length: n }, (_, i) => player(`p${i}`, `Player${i}`));
       let state = createInitialState(players);
@@ -155,31 +155,11 @@ describe("full game (autoMove every turn)", () => {
         if (!result.ok) throw new Error(result.error);
         state = result.state;
       }
-      expect(state.round.roundNumber).toBe(4);
-      expect(state.roundHistory).toHaveLength(4);
+      expect(state.round.roundNumber).toBe(1);
+      expect(state.roundHistory).toHaveLength(1);
       const { rawScores, sortOrder } = computeResult(state);
       expect(sortOrder).toBe("desc");
       for (const p of players) expect(rawScores[p.id]).toBeGreaterThanOrEqual(0);
     }
-  });
-
-  it("rotates the start player to the left each round", () => {
-    const players = [player("p0", "A"), player("p1", "B"), player("p2", "C")];
-    let state = createInitialState(players, "p0");
-    const startersSeen = [state.round.startPlayerId];
-    let guard = 0;
-    while (!isGameOver(state)) {
-      guard++;
-      if (guard > 5000) throw new Error("did not terminate");
-      const current = getCurrentTurnPlayerId(state)!;
-      const move = autoMove(state, current);
-      const result = applyMove(state, current, move);
-      if (!result.ok) throw new Error(result.error);
-      state = result.state;
-      if (startersSeen[startersSeen.length - 1] !== state.round.startPlayerId) {
-        startersSeen.push(state.round.startPlayerId);
-      }
-    }
-    expect(startersSeen).toEqual(["p0", "p1", "p2", "p0"]);
   });
 });

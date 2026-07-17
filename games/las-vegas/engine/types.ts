@@ -64,7 +64,9 @@ export interface LasVegasState {
   billDeck: Bill[]; // face-down remaining pile, recycled leftovers go to the bottom
   round: RoundState;
   roundHistory: RoundResult[];
-  totalRounds: 4;
+  /** Single-round variant (house rule): the whole game is one dice-and-payout cycle instead of
+   * the official game's 4 rounds. */
+  totalRounds: 1;
   /** True for 2-4 players (the official variant); false for 5 (base game, no house dice). */
   neutralDiceEnabled: boolean;
   phase: GamePhase;
