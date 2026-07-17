@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "보드게임 나이트",
+  title: "남천동 킹드게임",
   description: "친구들과 모바일로 함께하는 보드게임 허브",
 };
 

@@ -8,9 +8,11 @@ import { legalCardIds } from "../engine/trick";
 import type { Card, TigressDeclaration } from "../engine/types";
 import { BidControls } from "./BidControls";
 import { CardFace } from "./CardFace";
+import { CardLegend } from "./CardLegend";
 import { HandView } from "./HandView";
 import { OpponentStatusStrip } from "./OpponentStatusStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
+import { SkullKingScoreboard } from "./SkullKingScoreboard";
 import { TrickTable } from "./TrickTable";
 
 export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
@@ -53,6 +55,7 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
             <span className="text-lg font-bold text-emerald-300">{score}점</span>
           </div>
         ))}
+        <SkullKingScoreboard players={state.players} roundHistory={state.roundHistory} cumulativeScores={state.cumulativeScores} />
         <CumulativeScoreboard players={state.players} totals={roomTotals} />
       </div>
     );
@@ -64,10 +67,13 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-white/60">
-          라운드 {state.roundNumber}/{state.totalRounds} · {state.completedTricks.length}/{state.roundNumber}트릭
+          라운드 {state.roundNumber}/{state.totalRounds} · {state.completedTricks.length}/{state.roundNumber}트릭 · 내 트릭{" "}
+          {state.myTricksWon}개
         </span>
         <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
       </div>
+
+      <CardLegend />
 
       <OpponentStatusStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 
@@ -116,6 +122,7 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
         )}
       </div>
 
+      <SkullKingScoreboard players={state.players} roundHistory={state.roundHistory} cumulativeScores={state.cumulativeScores} />
       <CumulativeScoreboard players={state.players} totals={roomTotals} />
     </div>
   );
