@@ -25,4 +25,5 @@ export type ServerEvent =
   | { type: "roomState"; state: PublicRoomState }
   | { type: "playerConnectionChanged"; playerId: string; connected: boolean }
   | { type: "gameStateUpdated"; state: unknown } // per-connection redacted game state, sent individually
-  | { type: "error"; code: string; message: string };
+  | { type: "error"; code: string; message: string }
+  | { type: "kicked" }; // sent only to the removed player, right before the server closes their connection

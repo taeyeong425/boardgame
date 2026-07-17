@@ -337,11 +337,24 @@ export default class BoardgameRoom implements Party.Server {
       send(sender, { type: "error", code: "INVALID_STATE", message: "Can only remove players from the lobby." });
       return;
     }
+    if (targetPlayerId === state.hostPlayerId) {
+      send(sender, { type: "error", code: "CANNOT_KICK_HOST", message: "The host can't kick themselves." });
+      return;
+    }
     const { [targetPlayerId]: _removed, ...players } = state.players;
     let next: RoomState = { ...state, players };
     next = promoteHostIfNeeded(next);
     await saveRoomState(this.room, next);
     broadcastPublicState(this.room, next);
+
+    // The removed player keeps their own stale connection/state until explicitly told and
+    // disconnected — otherwise their client would just silently sit in a broken lobby view.
+    for (const connection of this.room.getConnections<ConnState>()) {
+      if (connState(connection)?.playerId === targetPlayerId) {
+        send(connection, { type: "kicked" });
+        connection.close();
+      }
+    }
   }
 
   private async handleTransferHost(sender: Party.Connection, targetPlayerId: string) {

@@ -33,6 +33,13 @@ export function LobbyScreen({
     }
   }
 
+  function handleKickPlayer(playerId: string) {
+    const nickname = publicState.players[playerId]?.nickname ?? "이 플레이어";
+    if (window.confirm(`${nickname}님을 방에서 내보낼까요?`)) {
+      sendMessage({ type: "kickPlayer", playerId });
+    }
+  }
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-10">
       <div className="flex items-start justify-between">
@@ -62,6 +69,7 @@ export function LobbyScreen({
         isSelfHost={isHost}
         isLobby={publicState.phase === "lobby"}
         onTransferHost={(playerId) => sendMessage({ type: "transferHost", playerId })}
+        onKickPlayer={handleKickPlayer}
       />
 
       {publicState.nextStartingPlayerId && (

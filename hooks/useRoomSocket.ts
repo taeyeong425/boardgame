@@ -21,6 +21,7 @@ export interface UseRoomSocketResult {
   lastError: { code: string; message: string } | null;
   selfPlayerId: string;
   sendMessage: (message: ClientMessage) => void;
+  kicked: boolean;
 }
 
 function playerIdStorageKey(code: string): string {
@@ -57,6 +58,7 @@ export function useRoomSocket({ code, nickname, intent }: UseRoomSocketOptions):
   const [gameState, setGameState] = useState<unknown | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [lastError, setLastError] = useState<{ code: string; message: string } | null>(null);
+  const [kicked, setKicked] = useState(false);
   const socketRef = useRef<PartySocket | null>(null);
   const hasJoinedOnceRef = useRef(false);
 
@@ -109,6 +111,12 @@ export function useRoomSocket({ code, nickname, intent }: UseRoomSocketOptions):
             };
           });
           return;
+        case "kicked":
+          // Clear the stored identity so a later visit to this room joins fresh rather than
+          // trying to rejoin a seat the host just removed.
+          window.localStorage.removeItem(playerIdStorageKey(code));
+          setKicked(true);
+          return;
       }
     });
 
@@ -124,5 +132,5 @@ export function useRoomSocket({ code, nickname, intent }: UseRoomSocketOptions):
     socketRef.current?.send(JSON.stringify(message));
   }, []);
 
-  return { publicState, gameState, status, lastError, selfPlayerId: playerId, sendMessage };
+  return { publicState, gameState, status, lastError, selfPlayerId: playerId, sendMessage, kicked };
 }

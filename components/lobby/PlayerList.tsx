@@ -9,6 +9,7 @@ export function PlayerList({
   isSelfHost,
   isLobby,
   onTransferHost,
+  onKickPlayer,
 }: {
   players: Player[];
   hostPlayerId: string;
@@ -17,6 +18,7 @@ export function PlayerList({
   isSelfHost: boolean;
   isLobby: boolean;
   onTransferHost: (playerId: string) => void;
+  onKickPlayer: (playerId: string) => void;
 }) {
   const ids = players.map((p) => p.id);
   const standings = computeStandings(totals, "desc", ids); // higher cumulative points = better rank
@@ -36,13 +38,22 @@ export function PlayerList({
           <span className="flex items-center gap-2">
             <span className="font-semibold">{totals[p.id] ?? 0}점</span>
             {isSelfHost && isLobby && p.id !== hostPlayerId && (
-              <button
-                type="button"
-                onClick={() => onTransferHost(p.id)}
-                className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-white/60 active:scale-95"
-              >
-                호스트로 지정
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => onTransferHost(p.id)}
+                  className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-white/60 active:scale-95"
+                >
+                  호스트로 지정
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onKickPlayer(p.id)}
+                  className="rounded-full border border-red-400/40 px-2 py-0.5 text-xs text-red-400 active:scale-95"
+                >
+                  내보내기
+                </button>
+              </>
             )}
           </span>
         </li>

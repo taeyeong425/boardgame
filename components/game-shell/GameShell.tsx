@@ -16,7 +16,22 @@ export function GameShell({
   room: UseRoomSocketResult;
   onLeaveRoom: () => void;
 }) {
-  const { publicState, gameState, selfPlayerId, status, lastError, sendMessage } = room;
+  const { publicState, gameState, selfPlayerId, status, lastError, sendMessage, kicked } = room;
+
+  if (kicked) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-white/80">호스트가 당신을 방에서 내보냈어요.</p>
+        <button
+          type="button"
+          onClick={onLeaveRoom}
+          className="rounded-lg bg-emerald-500 px-6 py-2 font-semibold text-white active:scale-95"
+        >
+          처음으로
+        </button>
+      </div>
+    );
+  }
 
   if (!publicState) {
     return <div className="flex min-h-dvh items-center justify-center text-white/60">연결 중...</div>;
