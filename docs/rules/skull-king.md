@@ -37,14 +37,13 @@ round 10, safely under 70), matching the cap already used for Penguin Party and 
 
 - 10 rounds. Round N deals N cards to each player (round 1 = 1 card each, ..., round 10 = 10 cards
   each).
-- Each round: every player bids how many tricks they'll win, based on their hand. The physical game
-  bids simultaneously (a fist-pound ritual reveals everyone's fingers at once); this app instead
-  has players bid **one at a time in turn order**, so the platform's existing single-current-turn
-  mechanism (and its 60s turn timer) can drive bidding the same way it drives everything else. No
-  player's bid is revealed to anyone else until every player has bid — so the actual "blind
-  decision" property of the physical game is preserved even though submission order isn't
-  simultaneous. Then tricks are played one at a time until the hand is empty (round N has exactly N
-  tricks).
+- Each round: every player bids how many tricks they'll win, based on their hand. Matching the
+  physical game's simultaneous fist-pound reveal, **any player may submit their bid at any time**
+  once the round starts — bidding isn't gated by turn order. No player's bid is revealed to anyone
+  else until every player has bid, preserving the "blind decision" property. (Internally, the
+  platform's single-current-turn mechanism still tracks whichever seat hasn't bid yet, purely so
+  the 60s turn timer has someone to target if they stall — it's not a submission order.) Then
+  tricks are played one at a time until the hand is empty (round N has exactly N tricks).
 - The winner of each trick leads the next one. The round's very first trick is led by the player
   after the previous round's dealer (in the app: rotates after the room's starting-player logic
   for the very first round of a game — see [docs/PLATFORM.md](../PLATFORM.md)).

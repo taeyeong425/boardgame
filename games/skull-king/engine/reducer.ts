@@ -48,23 +48,30 @@ export function createInitialState(players: Player[], startingPlayerId?: string 
 export function applyMove(state: SkullKingState, playerId: PlayerId, move: SkullKingMove): ApplyMoveResult {
   if (state.phase === "gameOver") return { ok: false, error: "GAME_OVER" };
   const round = state.round;
-  if (round.turnOrder[round.turnIndex] !== playerId) return { ok: false, error: "NOT_YOUR_TURN" };
 
   if (move.type === "bid") {
+    // Bidding is simultaneous (the physical game reveals everyone's fingers at once) — any
+    // player who hasn't bid yet this round may submit, regardless of turnIndex.
     if (round.phase !== "bidding") return { ok: false, error: "NOT_BIDDING_PHASE" };
+    const self = round.players[playerId];
+    if (!self) return { ok: false, error: "NOT_YOUR_TURN" };
+    if (self.bid !== null) return { ok: false, error: "ALREADY_BID" };
     if (!Number.isInteger(move.value) || move.value < 0 || move.value > round.roundNumber) {
       return { ok: false, error: "ILLEGAL_BID" };
     }
-    const players = { ...round.players, [playerId]: { ...round.players[playerId], bid: move.value } };
-    const turnIndex = round.turnIndex + 1;
-    if (turnIndex === round.turnOrder.length) {
+    const players = { ...round.players, [playerId]: { ...self, bid: move.value } };
+    const allBid = round.turnOrder.every((id) => players[id].bid !== null);
+    if (allBid) {
       const currentTrick = { leaderId: round.turnOrder[0], plays: [], ledSuit: null };
       return { ok: true, state: { ...state, round: { ...round, players, phase: "playing", turnIndex: 0, currentTrick } } };
     }
+    // turnIndex now just tracks the earliest still-undecided seat, for the turn-timer's benefit.
+    const turnIndex = round.turnOrder.findIndex((id) => players[id].bid === null);
     return { ok: true, state: { ...state, round: { ...round, players, turnIndex } } };
   }
 
-  // move.type === "playCard"
+  // move.type === "playCard" — the trick-taking phase stays strictly turn-based.
+  if (round.turnOrder[round.turnIndex] !== playerId) return { ok: false, error: "NOT_YOUR_TURN" };
   if (round.phase !== "playing" || round.currentTrick === null) return { ok: false, error: "NOT_PLAYING_PHASE" };
   const playerRound = round.players[playerId];
   const card = playerRound.hand.find((c) => c.id === move.cardId);

@@ -29,6 +29,15 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
   const isMyTurn = state.currentTurnPlayerId === selfPlayerId;
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
+  const biddedCount = (state.myBid !== null ? 1 : 0) + state.opponents.filter((o) => o.bidSubmitted).length;
+  const turnStatusText =
+    state.roundPhase === "bidding"
+      ? state.myBid !== null
+        ? "베팅 완료"
+        : "베팅하세요"
+      : isMyTurn
+        ? "내 차례!"
+        : `${currentTurnName}의 차례`;
 
   const legalIds = useMemo(
     () => (state.roundPhase === "playing" ? legalCardIds(state.myHand, state.currentTrick?.ledSuit ?? null) : []),
@@ -82,26 +91,42 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-white/60">
-          라운드 {state.roundNumber}/{state.totalRounds} · {state.completedTricks.length}/{state.roundNumber}트릭 · 내 트릭{" "}
-          {state.myTricksWon}개{state.myBid !== null && ` · 내 예측 ${state.myBid}`}
+          라운드 {state.roundNumber}/{state.totalRounds} · {state.completedTricks.length}/{state.roundNumber}트릭
         </span>
-        <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
+        <span className="font-semibold">{turnStatusText}</span>
+      </div>
+
+      <div>
+        <p className="mb-1 text-center text-xs text-white/50">
+          내 손패
+          {pendingTigressId && " (타이그리스 선언 중)"}
+        </p>
+        {pendingTigressId ? (
+          <div className="flex justify-center">
+            <CardFace card={state.myHand.find((c) => c.id === pendingTigressId)!} />
+          </div>
+        ) : (
+          <HandView hand={state.myHand} legalIds={legalIds} playable={!pendingReveal && state.roundPhase === "playing" && isMyTurn} onPlay={handlePlay} />
+        )}
       </div>
 
       <CardLegend />
 
-      <OpponentStatusStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
+      <OpponentStatusStrip
+        opponents={state.opponents}
+        currentTurnPlayerId={state.currentTurnPlayerId}
+        roundPhase={state.roundPhase}
+        self={{ handCount: state.myHand.length, tricksWon: state.myTricksWon, bid: state.myBid }}
+      />
 
       {state.roundPhase === "playing" && <TrickTable trick={state.currentTrick} playerNames={playerNames} />}
 
       {state.roundPhase === "bidding" && (
-        <div className="text-center text-xs text-white/50">
-          {state.myBid !== null ? "베팅 완료 — 다른 플레이어를 기다리는 중" : !isMyTurn ? `${currentTurnName}이(가) 베팅 중...` : ""}
-        </div>
+        <div className="text-center text-xs text-white/50">베팅 완료: {biddedCount}/{state.players.length}명</div>
       )}
       <BidControls
         maxBid={state.roundNumber}
-        playable={!pendingReveal && state.roundPhase === "bidding" && isMyTurn && state.myBid === null}
+        playable={!pendingReveal && state.roundPhase === "bidding" && state.myBid === null}
         onSubmit={(v) => sendAction({ type: "bid", value: v })}
       />
 
@@ -126,20 +151,6 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
           </div>
         </div>
       )}
-
-      <div>
-        <p className="mb-1 text-center text-xs text-white/50">
-          내 손패
-          {pendingTigressId && " (타이그리스 선언 중)"}
-        </p>
-        {pendingTigressId ? (
-          <div className="flex justify-center">
-            <CardFace card={state.myHand.find((c) => c.id === pendingTigressId)!} />
-          </div>
-        ) : (
-          <HandView hand={state.myHand} legalIds={legalIds} playable={!pendingReveal && state.roundPhase === "playing" && isMyTurn} onPlay={handlePlay} />
-        )}
-      </div>
 
       <SkullKingScoreboard players={state.players} roundHistory={state.roundHistory} cumulativeScores={state.cumulativeScores} />
       <CumulativeScoreboard players={state.players} totals={roomTotals} />

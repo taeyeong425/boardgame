@@ -67,9 +67,12 @@ function twoPlayerRound1(hands: Record<string, Card>): SkullKingState {
 }
 
 describe("applyMove — bidding", () => {
-  it("rejects a bid from a player who isn't the current turn", () => {
+  it("rejects a second bid from a player who already bid this round", () => {
     const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
-    expect(applyMove(state, "p1", { type: "bid", value: 0 })).toEqual({ ok: false, error: "NOT_YOUR_TURN" });
+    const r1 = applyMove(state, "p0", { type: "bid", value: 1 });
+    expect(r1.ok).toBe(true);
+    if (!r1.ok) return;
+    expect(applyMove(r1.state, "p0", { type: "bid", value: 0 })).toEqual({ ok: false, error: "ALREADY_BID" });
   });
 
   it("rejects a bid outside 0..cardsInHand", () => {
@@ -77,15 +80,16 @@ describe("applyMove — bidding", () => {
     expect(applyMove(state, "p0", { type: "bid", value: 2 })).toEqual({ ok: false, error: "ILLEGAL_BID" });
   });
 
-  it("advances turn without revealing the bid to the other player, then flips to playing once all bid", () => {
+  it("lets any player bid out of turn order without revealing bids, then flips to playing once all bid", () => {
     const state = twoPlayerRound1({ p0: { kind: "escape", id: "escape-1" }, p1: { kind: "escape", id: "escape-2" } });
-    const r1 = applyMove(state, "p0", { type: "bid", value: 1 });
+    // p1 bids first even though p0 leads turnOrder — simultaneous bidding, not turn-gated.
+    const r1 = applyMove(state, "p1", { type: "bid", value: 1 });
     expect(r1.ok).toBe(true);
     if (!r1.ok) return;
     expect(r1.state.round.phase).toBe("bidding");
-    expect(getCurrentTurnPlayerId(r1.state)).toBe("p1");
+    expect(getCurrentTurnPlayerId(r1.state)).toBe("p0"); // only p0 left undecided
 
-    const r2 = applyMove(r1.state, "p1", { type: "bid", value: 0 });
+    const r2 = applyMove(r1.state, "p0", { type: "bid", value: 0 });
     expect(r2.ok).toBe(true);
     if (!r2.ok) return;
     expect(r2.state.round.phase).toBe("playing");
