@@ -30,7 +30,7 @@ const ENTRIES: { card: Card; title: string; body: string }[] = [
   },
   {
     card: { kind: "number", id: "legend-black", suit: "black", value: 14 },
-    title: "검은색(조각배) 숫자",
+    title: "검은색 숫자카드",
     body: "다른 색 숫자 카드보다는 항상 이기지만, 해적·스컬킹·인어에게는 져요.",
   },
 ];
