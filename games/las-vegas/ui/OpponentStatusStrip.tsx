@@ -23,7 +23,12 @@ export function OpponentStatusStrip({
       {turnOrder.map((id, i) => {
         if (id === selfPlayerId) {
           return (
-            <div key={id} className="flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border border-white/10 px-2 py-2 text-xs">
+            <div
+              key={id}
+              className={`flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs ${
+                selfPlayerId === currentTurnPlayerId ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
+              }`}
+            >
               <span className="text-[9px] text-white/40">{i + 1}번</span>
               <span className="font-semibold">나</span>
               <span className="text-white/70">🎲 {self.diceRemaining}</span>

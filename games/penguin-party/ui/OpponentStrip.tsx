@@ -79,7 +79,7 @@ export function OpponentStrip({
               cardCount={self.cardCount}
               eliminated={self.eliminated}
               emptiedHand={self.emptiedHand}
-              highlighted={false}
+              highlighted={selfPlayerId === currentTurnPlayerId}
             />
           );
         }

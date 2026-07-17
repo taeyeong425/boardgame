@@ -39,7 +39,9 @@ export function OpponentStatusStrip({
             <div
               key={id}
               className={`flex min-w-24 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs ${
-                isActive(roundPhase, self.bid === null, false) ? "border-sky-400 bg-sky-400/10" : "border-white/10"
+                isActive(roundPhase, self.bid === null, currentTurnPlayerId === selfPlayerId)
+                  ? "border-emerald-400 bg-emerald-400/10"
+                  : "border-white/10"
               }`}
             >
               <span className="text-[9px] text-white/40">{i + 1}번</span>
