@@ -29,13 +29,24 @@ const TRACK: TrackCell[] = (() => {
   return cells;
 })();
 
-/** Rendered as a boustrophedon (snake) path: each row alternates direction so the ascending
- * sequence coils continuously instead of breaking at a flat-wrap line boundary. 6 columns x 5
- * rows divides the 30 cells evenly. Row pixel width is hardcoded to match (see ROW_WIDTH_PX). */
-const COLUMNS = 6;
-const ROWS: TrackCell[][] = Array.from({ length: Math.ceil(TRACK.length / COLUMNS) }, (_, i) =>
-  TRACK.slice(i * COLUMNS, i * COLUMNS + COLUMNS)
-);
+/**
+ * Rendered as a closed rectangular loop, same as the physical board's border layout: start at
+ * the bottom-left corner, go up the left edge, right across the top, down the right edge, then
+ * left across the bottom — no wrap-arrows needed since the shape itself reads as one path.
+ * A 7-wide x 10-tall grid puts exactly 30 cells on its perimeter (2*7 + 2*10 - 4 corners = 30),
+ * matching the vertical/horizontal side lengths the physical board actually has (10 cells up
+ * each long side, 7 across each short side, corners shared between adjacent sides).
+ */
+const GRID_COLS = 7;
+const GRID_ROWS = 10;
+
+function trackGridPosition(i: number): { row: number; col: number } {
+  if (i <= 9) return { row: 9 - i, col: 0 }; // left edge, bottom -> top
+  if (i <= 15) return { row: 0, col: 1 + (i - 10) }; // top edge, left -> right
+  if (i <= 24) return { row: 1 + (i - 16), col: GRID_COLS - 1 }; // right edge, top -> bottom
+  return { row: GRID_ROWS - 1, col: GRID_COLS - 2 - (i - 25) }; // bottom edge, right -> left
+}
+const TRACK_POSITIONS = TRACK.map((_, i) => trackGridPosition(i));
 
 function trackIndexForBid(bid: Bid | null): number {
   if (!bid) return -1;
@@ -97,61 +108,52 @@ export function BidTrackBoard({
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-white/10 p-3">
-      <div className="flex items-center justify-center gap-4 text-xs text-white/60">
-        <span>🎲 생존 {livingDice}개</span>
-        <span>💀 탈락 {eliminatedDice}개</span>
-      </div>
-
-      <div className="flex flex-col items-center gap-1">
-        {ROWS.map((row, rowIndex) => {
-          const reversed = rowIndex % 2 === 1;
+      <div
+        className="mx-auto grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${GRID_COLS}, 2.5rem)`, gridTemplateRows: `repeat(${GRID_ROWS}, 2.5rem)` }}
+      >
+        {TRACK.map((cell, i) => {
+          const isPending = pendingIdx === cell.index;
+          const isCurrent = !isPending && currentIdx === cell.index;
+          const selectable = playable && isSelectable(cell);
+          const { row, col } = TRACK_POSITIONS[i];
+          const label =
+            cell.kind === "star"
+              ? `★${cell.count}`
+              : isPending && pending
+                ? `${cell.count}·${pending.face === "star" ? "★" : pending.face}`
+                : isCurrent && currentBid
+                  ? `${cell.count}·${currentBid.face === "star" ? "★" : currentBid.face}`
+                  : String(cell.count);
           return (
-            // Fixed width matches ROW_WIDTH_PX below so the turn arrow lines up under the row's
-            // actual edge cell, not the (wider) panel — reversed rows snake back the other way so
-            // the ascending sequence reads as one continuous coiled path instead of a flat wrap.
-            <div key={rowIndex} className="flex w-[270px] flex-col gap-1">
-              <div className={`flex gap-1.5 ${reversed ? "flex-row-reverse" : ""}`}>
-                {row.map((cell) => {
-                  const isPending = pendingIdx === cell.index;
-                  const isCurrent = !isPending && currentIdx === cell.index;
-                  const selectable = playable && isSelectable(cell);
-                  const label =
-                    cell.kind === "star"
-                      ? `★${cell.count}`
-                      : isPending && pending
-                        ? `${cell.count}·${pending.face === "star" ? "★" : pending.face}`
-                        : isCurrent && currentBid
-                          ? `${cell.count}·${currentBid.face === "star" ? "★" : currentBid.face}`
-                          : String(cell.count);
-                  return (
-                    <button
-                      key={cell.index}
-                      type="button"
-                      disabled={!selectable}
-                      onClick={() => handleCellClick(cell)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold ${
-                        isPending
-                          ? "border-2 border-amber-400 bg-amber-400/20 text-amber-200"
-                          : isCurrent
-                            ? "bg-amber-400 text-black"
-                            : selectable
-                              ? "border border-white/20 active:scale-95"
-                              : "border border-white/5 text-white/25"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              {rowIndex < ROWS.length - 1 && (
-                <div className={`flex text-sm text-white/25 ${reversed ? "justify-start pl-3" : "justify-end pr-3"}`}>
-                  {reversed ? "⤶" : "⤵"}
-                </div>
-              )}
-            </div>
+            <button
+              key={cell.index}
+              type="button"
+              disabled={!selectable}
+              onClick={() => handleCellClick(cell)}
+              style={{ gridRow: row + 1, gridColumn: col + 1 }}
+              className={`flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold ${
+                isPending
+                  ? "border-2 border-amber-400 bg-amber-400/20 text-amber-200"
+                  : isCurrent
+                    ? "bg-amber-400 text-black"
+                    : selectable
+                      ? "border border-white/20 active:scale-95"
+                      : "border border-white/5 text-white/25"
+              }`}
+            >
+              {label}
+            </button>
           );
         })}
+        {/* Hollow interior formed by the loop — reused as the physical board's own "dice graveyard" spot. */}
+        <div
+          style={{ gridRow: `2 / ${GRID_ROWS}`, gridColumn: `2 / ${GRID_COLS}` }}
+          className="flex flex-col items-center justify-center gap-1 text-xs text-white/60"
+        >
+          <span>🎲 생존 {livingDice}개</span>
+          <span>💀 탈락 {eliminatedDice}개</span>
+        </div>
       </div>
 
       {facePickerCell && (
