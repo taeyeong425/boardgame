@@ -3,8 +3,8 @@
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
-import { BidLadder } from "./BidLadder";
-import { BidProgressTrack } from "./BidProgressTrack";
+import { startingDiceCount } from "../engine/dice";
+import { BidTrackBoard } from "./BidTrackBoard";
 import { DiceHand } from "./DiceHand";
 import { PlayerOrderStrip } from "./PlayerOrderStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
@@ -18,6 +18,7 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
   const totalDiceRemaining =
     state.myDiceCount + state.opponents.reduce((sum, o) => sum + o.diceCount, 0);
+  const initialTotalDice = startingDiceCount(state.players.length) * state.players.length;
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -43,14 +44,15 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
         totalDiceRemaining={totalDiceRemaining}
       />
 
-      <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} />
-
       {state.myEliminated && <p className="text-center text-sm text-red-300">탈락 — 주사위를 모두 잃었어요.</p>}
 
-      <BidLadder
+      <BidTrackBoard
+        // Remounts whenever the table bid actually changes, so any unconfirmed ghost pick resets.
+        key={state.currentBid ? `${state.currentBid.count}-${state.currentBid.face}` : "opening"}
         currentBid={state.currentBid}
-        maxCount={Math.max(totalDiceRemaining, (state.currentBid?.count ?? 0) + 3)}
         playable={isMyTurn}
+        livingDice={totalDiceRemaining}
+        eliminatedDice={initialTotalDice - totalDiceRemaining}
         onBid={(bid) => sendAction({ type: "placeBid", count: bid.count, face: bid.face })}
       />
 
