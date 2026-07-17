@@ -18,7 +18,6 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
 
   const isMyTurn = state.currentTurnPlayerId === selfPlayerId;
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
-  const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
 
   if (state.phase === "gameOver" && state.finalReveal) {
     const ranked = [...state.finalReveal].sort((a, b) => b.totalMoney - a.totalMoney || b.bills.length - a.bills.length);
@@ -52,10 +51,6 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
   return (
     <div className="relative flex flex-col gap-3">
       <RoundResultBanner result={state.roundHistory[state.roundHistory.length - 1]} playerNames={playerNames} />
-
-      <div className="flex items-center justify-end text-sm">
-        <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
-      </div>
 
       <RulesPanel />
 

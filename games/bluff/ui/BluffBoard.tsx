@@ -15,7 +15,6 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
 
   const isMyTurn = state.currentTurnPlayerId === selfPlayerId && !state.myEliminated;
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
-  const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
   const totalDiceRemaining =
     state.myDiceCount + state.opponents.reduce((sum, o) => sum + o.diceCount, 0);
   const initialTotalDice = startingDiceCount(state.players.length) * state.players.length;
@@ -23,13 +22,6 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
   return (
     <div className="relative flex flex-col gap-3">
       <RoundResultBanner result={state.lastRoundResult} nicknames={playerNames} />
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-white/60">라운드 {state.roundNumber}</span>
-        <span className="font-semibold">
-          {state.phase === "gameOver" ? "게임 종료" : isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}
-        </span>
-      </div>
 
       <RulesPanel />
 

@@ -29,16 +29,7 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
 
   const isMyTurn = state.currentTurnPlayerId === selfPlayerId;
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
-  const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
   const biddedCount = (state.myBid !== null ? 1 : 0) + state.opponents.filter((o) => o.bidSubmitted).length;
-  const turnStatusText =
-    state.roundPhase === "bidding"
-      ? state.myBid !== null
-        ? "베팅 완료"
-        : "베팅하세요"
-      : isMyTurn
-        ? "내 차례!"
-        : `${currentTurnName}의 차례`;
 
   const legalIds = useMemo(
     () => (state.roundPhase === "playing" ? legalCardIds(state.myHand, state.currentTrick?.ledSuit ?? null) : []),
@@ -90,14 +81,8 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
       )}
       {!pendingReveal && <RoundResultBanner result={state.roundHistory[state.roundHistory.length - 1]} playerNames={playerNames} />}
 
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-white/60">
-          라운드 {state.roundNumber}/{state.totalRounds} · {state.completedTricks.length}/{state.roundNumber}트릭
-        </span>
-        <span className="font-semibold">{turnStatusText}</span>
-      </div>
-
       <RulesPanel />
+      <CardLegend />
 
       <OpponentStatusStrip
         opponents={state.opponents}
@@ -155,8 +140,6 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
           </div>
         </div>
       )}
-
-      <CardLegend />
 
       <SkullKingScoreboard players={state.players} roundHistory={state.roundHistory} cumulativeScores={state.cumulativeScores} />
       <CumulativeScoreboard players={state.players} totals={roomTotals} />

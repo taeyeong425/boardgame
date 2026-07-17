@@ -41,20 +41,10 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
   }
 
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
-  const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
 
   return (
     <div className="relative flex flex-col gap-3">
       <RoundResultOverlay summary={state.lastRoundSummary} playerNames={playerNames} />
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-white/60">
-          라운드 {state.roundNumber}/{state.totalRounds}
-        </span>
-        <span className="font-semibold">
-          {state.phase === "gameOver" ? "게임 종료" : isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}
-        </span>
-      </div>
 
       <RulesPanel />
 
