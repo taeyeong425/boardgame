@@ -5,7 +5,6 @@ import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
 import { BidLadder } from "./BidLadder";
 import { BidProgressTrack } from "./BidProgressTrack";
-import { BidReferenceBoard } from "./BidReferenceBoard";
 import { DiceHand } from "./DiceHand";
 import { PlayerOrderStrip } from "./PlayerOrderStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
@@ -48,11 +47,6 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
 
       {state.myEliminated && <p className="text-center text-sm text-red-300">탈락 — 주사위를 모두 잃었어요.</p>}
 
-      <div>
-        <p className="mb-1 text-center text-xs text-white/50">내 주사위 ({state.myDiceCount}개)</p>
-        <DiceHand dice={state.myDice} roundNumber={state.roundNumber} />
-      </div>
-
       <BidLadder
         currentBid={state.currentBid}
         maxCount={Math.max(totalDiceRemaining, (state.currentBid?.count ?? 0) + 3)}
@@ -70,7 +64,10 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
         </button>
       )}
 
-      <BidReferenceBoard />
+      <div>
+        <p className="mb-1 text-center text-xs text-white/50">내 주사위 ({state.myDiceCount}개)</p>
+        <DiceHand dice={state.myDice} roundNumber={state.roundNumber} />
+      </div>
 
       <CumulativeScoreboard players={state.players} totals={roomTotals} />
     </div>
