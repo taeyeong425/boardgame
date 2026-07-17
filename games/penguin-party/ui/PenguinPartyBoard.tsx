@@ -10,6 +10,7 @@ import { OpponentStrip } from "./OpponentStrip";
 import { PlayerHand } from "./PlayerHand";
 import { PyramidView } from "./PyramidView";
 import { RoundResultOverlay } from "./RoundResultOverlay";
+import { RulesPanel } from "./RulesPanel";
 import { cardColorLabel } from "./cardColor";
 
 export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
@@ -60,6 +61,8 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
           공개 카드({cardColorLabel(state.revealedExtraCard.color)}) — 이번 라운드에는 사용되지 않아요.
         </p>
       )}
+
+      <RulesPanel />
 
       <OpponentStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 

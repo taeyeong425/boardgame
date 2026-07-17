@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { CollapsiblePanel } from "@/components/common/CollapsiblePanel";
 import type { Card } from "../engine/types";
 import { CardFace } from "./CardFace";
 
@@ -38,31 +36,17 @@ const ENTRIES: { card: Card; title: string; body: string }[] = [
 ];
 
 export function CardLegend() {
-  const [open, setOpen] = useState(false);
-
   return (
-    <div className="rounded-lg border border-white/10">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-white/70"
-      >
-        <span>❓ 카드 설명</span>
-        <span>{open ? "숨기기 ▲" : "펼치기 ▼"}</span>
-      </button>
-      {open && (
-        <div className="flex flex-col gap-2 border-t border-white/10 p-3">
-          {ENTRIES.map((e) => (
-            <div key={e.title} className="flex items-start gap-2">
-              <CardFace card={e.card} size="sm" />
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-white/90">{e.title}</p>
-                <p className="text-xs text-white/60">{e.body}</p>
-              </div>
-            </div>
-          ))}
+    <CollapsiblePanel title="❓ 카드 설명">
+      {ENTRIES.map((e) => (
+        <div key={e.title} className="flex items-start gap-2">
+          <CardFace card={e.card} size="sm" />
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-white/90">{e.title}</p>
+            <p className="text-xs text-white/60">{e.body}</p>
+          </div>
         </div>
-      )}
-    </div>
+      ))}
+    </CollapsiblePanel>
   );
 }

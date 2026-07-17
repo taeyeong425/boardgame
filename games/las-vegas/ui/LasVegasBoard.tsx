@@ -7,6 +7,7 @@ import { CasinoBoard } from "./CasinoBoard";
 import { OpponentStatusStrip } from "./OpponentStatusStrip";
 import { RollControls } from "./RollControls";
 import { RoundResultBanner } from "./RoundResultBanner";
+import { RulesPanel } from "./RulesPanel";
 
 function formatMoney(value: number): string {
   return `$${value.toLocaleString()}`;
@@ -55,6 +56,8 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
       <div className="flex items-center justify-end text-sm">
         <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
       </div>
+
+      <RulesPanel />
 
       <OpponentStatusStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 

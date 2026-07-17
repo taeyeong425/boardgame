@@ -9,6 +9,7 @@ import { DiceHand } from "./DiceHand";
 import { bidReadout } from "./faceDisplay";
 import { OpponentDiceStrip } from "./OpponentDiceStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
+import { RulesPanel } from "./RulesPanel";
 
 export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
   const state = gameState as BluffClientState;
@@ -31,6 +32,7 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
 
       <OpponentDiceStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 
+      <RulesPanel />
       <BidReferenceBoard />
 
       <div className="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-4">
