@@ -1,14 +1,13 @@
 "use client";
 
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
-import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
 import { BidLadder } from "./BidLadder";
 import { BidProgressTrack } from "./BidProgressTrack";
 import { BidReferenceBoard } from "./BidReferenceBoard";
 import { DiceHand } from "./DiceHand";
-import { OpponentDiceStrip } from "./OpponentDiceStrip";
+import { PlayerOrderStrip } from "./PlayerOrderStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
 import { RulesPanel } from "./RulesPanel";
 
@@ -20,7 +19,6 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
   const totalDiceRemaining =
     state.myDiceCount + state.opponents.reduce((sum, o) => sum + o.diceCount, 0);
-  const eliminatedIds = state.opponents.filter((o) => o.eliminated).map((o) => o.playerId);
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -33,23 +31,20 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
         </span>
       </div>
 
-      <TurnOrderIndicator
+      <RulesPanel />
+
+      <PlayerOrderStrip
         turnOrder={state.turnOrder}
         playerNames={playerNames}
         currentTurnPlayerId={state.currentTurnPlayerId}
         selfPlayerId={selfPlayerId}
-        eliminatedIds={state.myEliminated ? [...eliminatedIds, selfPlayerId] : eliminatedIds}
-      />
-
-      <RulesPanel />
-
-      <OpponentDiceStrip
+        selfDiceCount={state.myDiceCount}
+        selfEliminated={state.myEliminated}
         opponents={state.opponents}
-        currentTurnPlayerId={state.currentTurnPlayerId}
-        self={{ diceCount: state.myDiceCount, eliminated: state.myEliminated }}
+        totalDiceRemaining={totalDiceRemaining}
       />
 
-      <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} totalDiceRemaining={totalDiceRemaining} />
+      <BidProgressTrack bidLog={state.bidLog} playerNames={playerNames} />
 
       {state.myEliminated && <p className="text-center text-sm text-red-300">탈락 — 주사위를 모두 잃었어요.</p>}
 
