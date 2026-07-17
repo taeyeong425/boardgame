@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
-import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { SkullKingClientState } from "../engine/clientView";
 import { legalCardIds } from "../engine/trick";
@@ -98,13 +97,6 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
         <span className="font-semibold">{turnStatusText}</span>
       </div>
 
-      <TurnOrderIndicator
-        turnOrder={state.turnOrder}
-        playerNames={playerNames}
-        currentTurnPlayerId={state.currentTurnPlayerId}
-        selfPlayerId={selfPlayerId}
-      />
-
       <RulesPanel />
 
       <OpponentStatusStrip
@@ -112,6 +104,8 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
         currentTurnPlayerId={state.currentTurnPlayerId}
         roundPhase={state.roundPhase}
         self={{ handCount: state.myHand.length, tricksWon: state.myTricksWon, bid: state.myBid }}
+        turnOrder={state.turnOrder}
+        selfPlayerId={selfPlayerId}
       />
 
       {state.roundPhase === "playing" && <TrickTable trick={state.currentTrick} playerNames={playerNames} />}

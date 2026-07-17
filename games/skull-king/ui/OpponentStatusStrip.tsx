@@ -21,11 +21,15 @@ export function OpponentStatusStrip({
   currentTurnPlayerId,
   roundPhase,
   self,
+  turnOrder,
+  selfPlayerId,
 }: {
   opponents: OpponentHandStatus[];
   currentTurnPlayerId: string | null;
   roundPhase: "bidding" | "playing";
   self: SelfStatus;
+  turnOrder: string[];
+  selfPlayerId: string;
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto p-1">
@@ -34,6 +38,7 @@ export function OpponentStatusStrip({
           isActive(roundPhase, self.bid === null, false) ? "border-sky-400 bg-sky-400/10" : "border-white/10"
         }`}
       >
+        <span className="text-[9px] text-white/40">{turnOrder.indexOf(selfPlayerId) + 1}번</span>
         <span className="font-semibold">나</span>
         <span className="text-white/70">🂠 {self.handCount}장</span>
         <span className="text-white/70">🏆 {self.tricksWon}트릭</span>
@@ -48,6 +53,7 @@ export function OpponentStatusStrip({
               : "border-white/10"
           }`}
         >
+          <span className="text-[9px] text-white/40">{turnOrder.indexOf(o.playerId) + 1}번</span>
           <span className="font-semibold">{o.nickname}</span>
           <span className="text-white/70">🂠 {o.handCount}장</span>
           <span className="text-white/70">🏆 {o.tricksWon}트릭</span>

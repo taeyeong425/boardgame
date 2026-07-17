@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
-import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { PenguinPartyClientState } from "../engine/clientView";
 import { getAllLegalPositions } from "../engine/pyramid";
@@ -44,7 +43,6 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
   const currentTurnName = state.currentTurnPlayerId ? (playerNames[state.currentTurnPlayerId] ?? "?") : "?";
   const myPenalty = state.players.find((p) => p.id === selfPlayerId)?.cumulativePenalty ?? 0;
-  const eliminatedIds = state.opponents.filter((o) => o.eliminated).map((o) => o.playerId);
 
   return (
     <div className="relative flex flex-col gap-3">
@@ -59,14 +57,6 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
         </span>
       </div>
 
-      <TurnOrderIndicator
-        turnOrder={state.turnOrder}
-        playerNames={playerNames}
-        currentTurnPlayerId={state.currentTurnPlayerId}
-        selfPlayerId={selfPlayerId}
-        eliminatedIds={state.myEliminated ? [...eliminatedIds, selfPlayerId] : eliminatedIds}
-      />
-
       <RulesPanel />
 
       <OpponentStrip
@@ -78,6 +68,8 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
           emptiedHand: state.myEmptiedHand,
           cumulativePenalty: myPenalty,
         }}
+        turnOrder={state.turnOrder}
+        selfPlayerId={selfPlayerId}
       />
 
       {state.revealedExtraCard && (

@@ -11,6 +11,7 @@ export interface SelfStripStatus {
 }
 
 function StripCard({
+  seatNumber,
   label,
   cardCount,
   eliminated,
@@ -18,6 +19,7 @@ function StripCard({
   cumulativePenalty,
   highlighted,
 }: {
+  seatNumber: number;
   label: string;
   cardCount: number;
   eliminated: boolean;
@@ -34,6 +36,7 @@ function StripCard({
         highlighted ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
       } ${eliminated ? "opacity-50" : ""}`}
     >
+      <span className="text-[9px] text-white/40">{seatNumber}번</span>
       <span className="font-semibold">{label}</span>
 
       {showBacks ? (
@@ -59,14 +62,19 @@ export function OpponentStrip({
   opponents,
   currentTurnPlayerId,
   self,
+  turnOrder,
+  selfPlayerId,
 }: {
   opponents: OpponentView[];
   currentTurnPlayerId: string | null;
   self: SelfStripStatus;
+  turnOrder: string[];
+  selfPlayerId: string;
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto p-1">
       <StripCard
+        seatNumber={turnOrder.indexOf(selfPlayerId) + 1}
         label="나"
         cardCount={self.cardCount}
         eliminated={self.eliminated}
@@ -77,6 +85,7 @@ export function OpponentStrip({
       {opponents.map((o) => (
         <StripCard
           key={o.playerId}
+          seatNumber={turnOrder.indexOf(o.playerId) + 1}
           label={o.nickname}
           cardCount={o.cardCount}
           eliminated={o.eliminated}
