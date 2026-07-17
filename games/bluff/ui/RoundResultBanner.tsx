@@ -3,11 +3,8 @@
 import { useEffect, useState } from "react";
 import { Die3D } from "@/components/common/Die3D";
 import { BLUFF_FACES, faceIndexOf } from "./DiceHand";
+import { bidReadout } from "./faceDisplay";
 import type { DieFace, RoundResult } from "../engine/types";
-
-function faceLabel(face: RoundResult["bid"]["face"]): string {
-  return face === "star" ? "★" : String(face);
-}
 
 /** Same wildcard rule as engine/dice.ts's countMatching: a star counts toward any numbered bid,
  * but a bid on "star" itself only counts actual stars. */
@@ -19,7 +16,7 @@ function matchesBidFace(die: DieFace, bidFace: DieFace): boolean {
 function outcomeLine(result: RoundResult, nicknames: Record<string, string>): string {
   const bidderName = nicknames[result.bidderId] ?? "?";
   const challengerName = nicknames[result.challengerId] ?? "?";
-  const bidText = `${result.bid.count}개의 ${faceLabel(result.bid.face)}`;
+  const bidText = bidReadout(result.bid.count, result.bid.face);
   switch (result.outcome) {
     case "challengerLoses":
       return `${bidderName}의 "${bidText}" 베팅 성공 — 블러프를 외친 ${challengerName}가 ${result.diceLost[result.challengerId]}개 잃음`;
@@ -58,7 +55,7 @@ function RoundResultBannerInner({ result, nicknames }: { result: RoundResult; ni
       <p className="mb-1 font-semibold">{result.roundNumber}라운드 결과 — 블러프!</p>
       <p className="mb-2 text-white/80">{outcomeLine(result, nicknames)}</p>
       <p className="mb-1 text-xs text-white/60">
-        전체 공개 — {result.bid.count}개의 {faceLabel(result.bid.face)} 베팅, 실제로는{" "}
+        전체 공개 — {bidReadout(result.bid.count, result.bid.face)} 베팅, 실제로는{" "}
         <span className="font-bold text-amber-300">{result.actualCount}개</span>
       </p>
       <div className="flex flex-col gap-1.5">

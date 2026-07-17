@@ -3,15 +3,12 @@
 import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
-import type { Bid } from "../engine/types";
 import { BidControls } from "./BidControls";
+import { BidReferenceBoard } from "./BidReferenceBoard";
 import { DiceHand } from "./DiceHand";
+import { bidReadout } from "./faceDisplay";
 import { OpponentDiceStrip } from "./OpponentDiceStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
-
-function faceLabel(face: Bid["face"]): string {
-  return face === "star" ? "★" : String(face);
-}
 
 export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
   const state = gameState as BluffClientState;
@@ -34,11 +31,13 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
 
       <OpponentDiceStrip opponents={state.opponents} currentTurnPlayerId={state.currentTurnPlayerId} />
 
+      <BidReferenceBoard />
+
       <div className="flex flex-col items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-4">
         <span className="text-xs text-white/50">현재 베팅</span>
         {state.currentBid ? (
           <span className="text-2xl font-bold">
-            {state.currentBid.count}개의 {faceLabel(state.currentBid.face)}
+            {bidReadout(state.currentBid.count, state.currentBid.face)}
             {lastBidderName && <span className="ml-2 text-sm font-normal text-white/50">({lastBidderName})</span>}
           </span>
         ) : (

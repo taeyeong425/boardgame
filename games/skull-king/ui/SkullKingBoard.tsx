@@ -83,7 +83,7 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
       <div className="flex items-center justify-between text-sm">
         <span className="text-white/60">
           라운드 {state.roundNumber}/{state.totalRounds} · {state.completedTricks.length}/{state.roundNumber}트릭 · 내 트릭{" "}
-          {state.myTricksWon}개
+          {state.myTricksWon}개{state.myBid !== null && ` · 내 예측 ${state.myBid}`}
         </span>
         <span className="font-semibold">{isMyTurn ? "내 차례!" : `${currentTurnName}의 차례`}</span>
       </div>
