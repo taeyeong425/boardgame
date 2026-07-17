@@ -29,6 +29,14 @@ const TRACK: TrackCell[] = (() => {
   return cells;
 })();
 
+/** Rendered as a boustrophedon (snake) path: each row alternates direction so the ascending
+ * sequence coils continuously instead of breaking at a flat-wrap line boundary. 6 columns x 5
+ * rows divides the 30 cells evenly. Row pixel width is hardcoded to match (see ROW_WIDTH_PX). */
+const COLUMNS = 6;
+const ROWS: TrackCell[][] = Array.from({ length: Math.ceil(TRACK.length / COLUMNS) }, (_, i) =>
+  TRACK.slice(i * COLUMNS, i * COLUMNS + COLUMNS)
+);
+
 function trackIndexForBid(bid: Bid | null): number {
   if (!bid) return -1;
   if (bid.face === "star") return TRACK.findIndex((c) => c.kind === "star" && c.count === bid.count);
@@ -94,37 +102,54 @@ export function BidTrackBoard({
         <span>💀 탈락 {eliminatedDice}개</span>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-1.5">
-        {TRACK.map((cell) => {
-          const isPending = pendingIdx === cell.index;
-          const isCurrent = !isPending && currentIdx === cell.index;
-          const selectable = playable && isSelectable(cell);
-          const label =
-            cell.kind === "star"
-              ? `★${cell.count}`
-              : isPending && pending
-                ? `${cell.count}·${pending.face === "star" ? "★" : pending.face}`
-                : isCurrent && currentBid
-                  ? `${cell.count}·${currentBid.face === "star" ? "★" : currentBid.face}`
-                  : String(cell.count);
+      <div className="flex flex-col items-center gap-1">
+        {ROWS.map((row, rowIndex) => {
+          const reversed = rowIndex % 2 === 1;
           return (
-            <button
-              key={cell.index}
-              type="button"
-              disabled={!selectable}
-              onClick={() => handleCellClick(cell)}
-              className={`flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold ${
-                isPending
-                  ? "border-2 border-amber-400 bg-amber-400/20 text-amber-200"
-                  : isCurrent
-                    ? "bg-amber-400 text-black"
-                    : selectable
-                      ? "border border-white/20 active:scale-95"
-                      : "border border-white/5 text-white/25"
-              }`}
-            >
-              {label}
-            </button>
+            // Fixed width matches ROW_WIDTH_PX below so the turn arrow lines up under the row's
+            // actual edge cell, not the (wider) panel — reversed rows snake back the other way so
+            // the ascending sequence reads as one continuous coiled path instead of a flat wrap.
+            <div key={rowIndex} className="flex w-[270px] flex-col gap-1">
+              <div className={`flex gap-1.5 ${reversed ? "flex-row-reverse" : ""}`}>
+                {row.map((cell) => {
+                  const isPending = pendingIdx === cell.index;
+                  const isCurrent = !isPending && currentIdx === cell.index;
+                  const selectable = playable && isSelectable(cell);
+                  const label =
+                    cell.kind === "star"
+                      ? `★${cell.count}`
+                      : isPending && pending
+                        ? `${cell.count}·${pending.face === "star" ? "★" : pending.face}`
+                        : isCurrent && currentBid
+                          ? `${cell.count}·${currentBid.face === "star" ? "★" : currentBid.face}`
+                          : String(cell.count);
+                  return (
+                    <button
+                      key={cell.index}
+                      type="button"
+                      disabled={!selectable}
+                      onClick={() => handleCellClick(cell)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold ${
+                        isPending
+                          ? "border-2 border-amber-400 bg-amber-400/20 text-amber-200"
+                          : isCurrent
+                            ? "bg-amber-400 text-black"
+                            : selectable
+                              ? "border border-white/20 active:scale-95"
+                              : "border border-white/5 text-white/25"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {rowIndex < ROWS.length - 1 && (
+                <div className={`flex text-sm text-white/25 ${reversed ? "justify-start pl-3" : "justify-end pr-3"}`}>
+                  {reversed ? "⤶" : "⤵"}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
