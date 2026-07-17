@@ -61,6 +61,8 @@ function twoPlayerRound1(hands: Record<string, Card>): SkullKingState {
     roundHistory: [],
     cumulativeScores: { p0: 0, p1: 0 },
     phase: "playing",
+    trickSequence: 0,
+    lastTrickReveal: null,
   };
 }
 
@@ -156,6 +158,45 @@ describe("applyMove — playCard", () => {
     expect(p1Plays.state.round.turnOrder).toEqual(["p1", "p0"]);
     expect(p1Plays.state.round.players.p0.hand.length).toBe(2);
     expect(isGameOver(p1Plays.state)).toBe(false);
+
+    // the trick reveal survives the round transition even though round.players already reset
+    expect(p1Plays.state.trickSequence).toBe(1);
+    expect(p1Plays.state.lastTrickReveal?.trick.winnerId).toBe("p0");
+    expect(p1Plays.state.lastTrickReveal?.standings).toEqual([
+      { playerId: "p0", bid: 1, tricksWon: 1 },
+      { playerId: "p1", bid: 0, tricksWon: 0 },
+    ]);
+  });
+
+  it("increments trickSequence for every trick within a round, not just the last one", () => {
+    const state = twoPlayerRound1({ p0: { kind: "number", id: "green-9", suit: "green", value: 9 }, p1: { kind: "number", id: "green-3", suit: "green", value: 3 } });
+    state.round.roundNumber = 2;
+    state.round.players.p0.hand.push({ kind: "number", id: "green-1", suit: "green", value: 1 });
+    state.round.players.p1.hand.push({ kind: "number", id: "green-2", suit: "green", value: 2 });
+
+    const b1 = applyMove(state, "p0", { type: "bid", value: 1 });
+    if (!b1.ok) throw new Error(b1.error);
+    const b2 = applyMove(b1.state, "p1", { type: "bid", value: 1 });
+    if (!b2.ok) throw new Error(b2.error);
+
+    const t1a = applyMove(b2.state, "p0", { type: "playCard", cardId: "green-9" });
+    if (!t1a.ok) throw new Error(t1a.error);
+    const t1b = applyMove(t1a.state, "p1", { type: "playCard", cardId: "green-3" });
+    if (!t1b.ok) throw new Error(t1b.error);
+    expect(t1b.state.trickSequence).toBe(1);
+    expect(t1b.state.lastTrickReveal?.trick.winnerId).toBe("p0"); // green 9 beats green 3
+    expect(t1b.state.round.roundNumber).toBe(2); // round still in progress, not yet transitioned
+
+    const t2a = applyMove(t1b.state, "p0", { type: "playCard", cardId: "green-1" });
+    if (!t2a.ok) throw new Error(t2a.error);
+    const t2b = applyMove(t2a.state, "p1", { type: "playCard", cardId: "green-2" });
+    if (!t2b.ok) throw new Error(t2b.error);
+    expect(t2b.state.trickSequence).toBe(2);
+    expect(t2b.state.lastTrickReveal?.trick.winnerId).toBe("p1"); // green 2 beats green 1
+    expect(t2b.state.lastTrickReveal?.standings).toEqual([
+      { playerId: "p0", bid: 1, tricksWon: 1 },
+      { playerId: "p1", bid: 1, tricksWon: 1 },
+    ]);
   });
 });
 

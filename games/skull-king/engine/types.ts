@@ -75,6 +75,14 @@ export interface RoundScoreEntry {
   scores: Record<PlayerId, { bid: number; tricksWon: number; bonusPoints: number; roundPoints: number }>;
 }
 
+export interface TrickReveal {
+  trick: CompletedTrick;
+  /** Each player's bid and tricks-won-so-far at the moment this trick resolved — snapshotted here
+   * because a round transition (triggered by this same trick, if it was the round's last) resets
+   * both fields for the next round before the client ever sees the intermediate state. */
+  standings: { playerId: PlayerId; bid: number; tricksWon: number }[];
+}
+
 export interface SkullKingState {
   players: { id: PlayerId; nickname: string }[];
   round: RoundState;
@@ -82,6 +90,10 @@ export interface SkullKingState {
   roundHistory: RoundScoreEntry[];
   cumulativeScores: Record<PlayerId, number>;
   phase: "playing" | "gameOver";
+  /** Increments once per resolved trick across the whole game — lets clients detect "a new trick
+   * just resolved" and show lastTrickReveal even across a round boundary. */
+  trickSequence: number;
+  lastTrickReveal: TrickReveal | null;
 }
 
 export type SkullKingMove =

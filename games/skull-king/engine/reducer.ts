@@ -11,6 +11,7 @@ import type {
   RoundState,
   SkullKingMove,
   SkullKingState,
+  TrickReveal,
 } from "./types";
 
 export type ApplyMoveResult = { ok: true; state: SkullKingState } | { ok: false; error: string };
@@ -39,6 +40,8 @@ export function createInitialState(players: Player[], startingPlayerId?: string 
     roundHistory: [],
     cumulativeScores,
     phase: "playing",
+    trickSequence: 0,
+    lastTrickReveal: null,
   };
 }
 
@@ -91,11 +94,19 @@ export function applyMove(state: SkullKingState, playerId: PlayerId, move: Skull
     [winnerId]: { ...players[winnerId], tricksWon: players[winnerId].tricksWon + 1, bonusPoints: players[winnerId].bonusPoints + bonusPoints },
   };
   const completedTricks = [...round.completedTricks, completed];
+  const lastTrickReveal: TrickReveal = {
+    trick: completed,
+    standings: round.turnOrder.map((id) => ({ playerId: id, bid: players[id].bid ?? 0, tricksWon: players[id].tricksWon })),
+  };
+  const trickSequence = state.trickSequence + 1;
 
   if (completedTricks.length < round.roundNumber) {
     const nextTurnIndex = round.turnOrder.indexOf(winnerId);
     const currentTrick = { leaderId: winnerId, plays: [], ledSuit: null };
-    return { ok: true, state: { ...state, round: { ...round, players, completedTricks, currentTrick, turnIndex: nextTurnIndex } } };
+    return {
+      ok: true,
+      state: { ...state, round: { ...round, players, completedTricks, currentTrick, turnIndex: nextTurnIndex }, trickSequence, lastTrickReveal },
+    };
   }
 
   // Round complete — tally each player's round score into the cumulative total.
@@ -112,12 +123,22 @@ export function applyMove(state: SkullKingState, playerId: PlayerId, move: Skull
   const finishedRound: RoundState = { ...round, players, completedTricks, currentTrick: null };
 
   if (round.roundNumber === state.totalRounds) {
-    return { ok: true, state: { ...state, round: finishedRound, roundHistory, cumulativeScores, phase: "gameOver" } };
+    return {
+      ok: true,
+      state: { ...state, round: finishedRound, roundHistory, cumulativeScores, phase: "gameOver", trickSequence, lastTrickReveal },
+    };
   }
   const nextTurnOrder = [...round.turnOrder.slice(1), round.turnOrder[0]];
   return {
     ok: true,
-    state: { ...state, round: buildRound(round.roundNumber + 1, nextTurnOrder), roundHistory, cumulativeScores },
+    state: {
+      ...state,
+      round: buildRound(round.roundNumber + 1, nextTurnOrder),
+      roundHistory,
+      cumulativeScores,
+      trickSequence,
+      lastTrickReveal,
+    },
   };
 }
 

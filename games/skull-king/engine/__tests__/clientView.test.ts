@@ -24,6 +24,8 @@ function baseState(overrides: Partial<SkullKingState> = {}): SkullKingState {
     roundHistory: [],
     cumulativeScores: { p0: 0, p1: 0 },
     phase: "playing",
+    trickSequence: 0,
+    lastTrickReveal: null,
   };
   return { ...state, ...overrides };
 }

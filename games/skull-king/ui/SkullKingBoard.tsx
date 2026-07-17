@@ -13,11 +13,18 @@ import { HandView } from "./HandView";
 import { OpponentStatusStrip } from "./OpponentStatusStrip";
 import { RoundResultBanner } from "./RoundResultBanner";
 import { SkullKingScoreboard } from "./SkullKingScoreboard";
+import { TrickRevealOverlay } from "./TrickRevealOverlay";
 import { TrickTable } from "./TrickTable";
 
 export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction }: GameComponentProps) {
   const state = gameState as SkullKingClientState;
   const [pendingTigressId, setPendingTigressId] = useState<string | null>(null);
+  // Local-only pacing: each client pauses on its own latest resolved trick until it clicks
+  // "다음", independent of the other player and independent of the server (which has already
+  // moved the game on). trickSequence increments once per trick across the whole game, including
+  // across round boundaries, so this comparison alone detects every new reveal.
+  const [acknowledgedTrickSeq, setAcknowledgedTrickSeq] = useState(0);
+  const pendingReveal = state.trickSequence > acknowledgedTrickSeq ? state.lastTrickReveal : null;
 
   const isMyTurn = state.currentTurnPlayerId === selfPlayerId;
   const playerNames = Object.fromEntries(state.players.map((p) => [p.id, p.nickname]));
@@ -63,7 +70,15 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
 
   return (
     <div className="relative flex flex-col gap-3">
-      <RoundResultBanner result={state.roundHistory[state.roundHistory.length - 1]} playerNames={playerNames} />
+      {pendingReveal && (
+        <TrickRevealOverlay
+          reveal={pendingReveal}
+          playerNames={playerNames}
+          selfPlayerId={selfPlayerId}
+          onNext={() => setAcknowledgedTrickSeq(state.trickSequence)}
+        />
+      )}
+      {!pendingReveal && <RoundResultBanner result={state.roundHistory[state.roundHistory.length - 1]} playerNames={playerNames} />}
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-white/60">
@@ -84,7 +99,11 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
           {state.myBid !== null ? "베팅 완료 — 다른 플레이어를 기다리는 중" : !isMyTurn ? `${currentTurnName}이(가) 베팅 중...` : ""}
         </div>
       )}
-      <BidControls maxBid={state.roundNumber} playable={state.roundPhase === "bidding" && isMyTurn && state.myBid === null} onSubmit={(v) => sendAction({ type: "bid", value: v })} />
+      <BidControls
+        maxBid={state.roundNumber}
+        playable={!pendingReveal && state.roundPhase === "bidding" && isMyTurn && state.myBid === null}
+        onSubmit={(v) => sendAction({ type: "bid", value: v })}
+      />
 
       {pendingTigressId && (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-orange-400/40 bg-orange-400/10 p-3">
@@ -118,7 +137,7 @@ export function SkullKingGame({ selfPlayerId, gameState, roomTotals, sendAction 
             <CardFace card={state.myHand.find((c) => c.id === pendingTigressId)!} />
           </div>
         ) : (
-          <HandView hand={state.myHand} legalIds={legalIds} playable={state.roundPhase === "playing" && isMyTurn} onPlay={handlePlay} />
+          <HandView hand={state.myHand} legalIds={legalIds} playable={!pendingReveal && state.roundPhase === "playing" && isMyTurn} onPlay={handlePlay} />
         )}
       </div>
 

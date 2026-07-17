@@ -1,4 +1,4 @@
-import type { Card, CompletedTrick, PlayerId, RoundScoreEntry, SkullKingState, Trick } from "./types";
+import type { Card, CompletedTrick, PlayerId, RoundScoreEntry, SkullKingState, Trick, TrickReveal } from "./types";
 
 export interface OpponentHandStatus {
   playerId: PlayerId;
@@ -26,6 +26,8 @@ export interface SkullKingClientState {
   completedTricks: CompletedTrick[];
   roundHistory: RoundScoreEntry[];
   cumulativeScores: Record<PlayerId, number>;
+  trickSequence: number;
+  lastTrickReveal: TrickReveal | null;
 }
 
 export function getClientView(state: SkullKingState, forPlayerId: PlayerId): SkullKingClientState {
@@ -61,5 +63,7 @@ export function getClientView(state: SkullKingState, forPlayerId: PlayerId): Sku
     completedTricks: round.completedTricks,
     roundHistory: state.roundHistory,
     cumulativeScores: state.cumulativeScores,
+    trickSequence: state.trickSequence,
+    lastTrickReveal: state.lastTrickReveal,
   };
 }
