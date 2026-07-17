@@ -135,7 +135,9 @@ export function applyMove(state: SkullKingState, playerId: PlayerId, move: Skull
       state: { ...state, round: finishedRound, roundHistory, cumulativeScores, phase: "gameOver", trickSequence, lastTrickReveal },
     };
   }
-  const nextTurnOrder = [...round.turnOrder.slice(1), round.turnOrder[0]];
+  // Whoever won the round's final trick leads (and bids first) next round — not just "next seat".
+  const winnerIndex = round.turnOrder.indexOf(winnerId);
+  const nextTurnOrder = [...round.turnOrder.slice(winnerIndex), ...round.turnOrder.slice(0, winnerIndex)];
   return {
     ok: true,
     state: {

@@ -44,9 +44,10 @@ round 10, safely under 70), matching the cap already used for Penguin Party and 
   platform's single-current-turn mechanism still tracks whichever seat hasn't bid yet, purely so
   the 60s turn timer has someone to target if they stall — it's not a submission order.) Then
   tricks are played one at a time until the hand is empty (round N has exactly N tricks).
-- The winner of each trick leads the next one. The round's very first trick is led by the player
-  after the previous round's dealer (in the app: rotates after the room's starting-player logic
-  for the very first round of a game — see [docs/PLATFORM.md](../PLATFORM.md)).
+- The winner of each trick leads the next one, including across round boundaries: whoever won a
+  round's final trick bids first and leads the first trick of the *next* round too (not simply
+  "the next seat"). The very first round of a game instead uses the room's starting-player logic
+  — see [docs/PLATFORM.md](../PLATFORM.md).
 
 ## Card strength & trick resolution
 

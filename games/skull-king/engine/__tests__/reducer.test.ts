@@ -139,7 +139,7 @@ describe("applyMove — playCard", () => {
     });
   });
 
-  it("resolves the trick, tallies the round, and starts round 2 with the seat rotated by one", () => {
+  it("resolves the trick, tallies the round, and starts round 2 led by the trick's winner", () => {
     const state = biddedState(
       { kind: "number", id: "green-9", suit: "green", value: 9 },
       { kind: "number", id: "green-3", suit: "green", value: 3 },
@@ -158,9 +158,9 @@ describe("applyMove — playCard", () => {
     expect(p1Plays.state.roundHistory[0].scores.p1).toEqual({ bid: 0, tricksWon: 0, bonusPoints: 0, roundPoints: 10 });
     expect(p1Plays.state.cumulativeScores).toEqual({ p0: 20, p1: 10 });
 
-    // next round's turn order rotates by one seat: p1 leads round 2
+    // p0 won the only trick, so p0 leads round 2 too (turn order unchanged, not rotated by seat)
     expect(p1Plays.state.round.roundNumber).toBe(2);
-    expect(p1Plays.state.round.turnOrder).toEqual(["p1", "p0"]);
+    expect(p1Plays.state.round.turnOrder).toEqual(["p0", "p1"]);
     expect(p1Plays.state.round.players.p0.hand.length).toBe(2);
     expect(isGameOver(p1Plays.state)).toBe(false);
 
@@ -171,6 +171,46 @@ describe("applyMove — playCard", () => {
       { playerId: "p0", bid: 1, tricksWon: 1 },
       { playerId: "p1", bid: 0, tricksWon: 0 },
     ]);
+  });
+
+  it("with 3+ players, leads next round with the trick winner even when that's not seat+1", () => {
+    const state: SkullKingState = {
+      players: [
+        { id: "p0", nickname: "A" },
+        { id: "p1", nickname: "B" },
+        { id: "p2", nickname: "C" },
+      ],
+      round: {
+        roundNumber: 1,
+        turnOrder: ["p0", "p1", "p2"],
+        phase: "playing",
+        turnIndex: 0,
+        players: {
+          p0: { hand: [{ kind: "number", id: "green-5", suit: "green", value: 5 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
+          p1: { hand: [{ kind: "number", id: "green-3", suit: "green", value: 3 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
+          p2: { hand: [{ kind: "number", id: "green-9", suit: "green", value: 9 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
+        },
+        completedTricks: [],
+        currentTrick: { leaderId: "p0", plays: [], ledSuit: null },
+      },
+      totalRounds: 10,
+      roundHistory: [],
+      cumulativeScores: { p0: 0, p1: 0, p2: 0 },
+      phase: "playing",
+      trickSequence: 0,
+      lastTrickReveal: null,
+    };
+
+    const r1 = applyMove(state, "p0", { type: "playCard", cardId: "green-5" });
+    if (!r1.ok) throw new Error(r1.error);
+    const r2 = applyMove(r1.state, "p1", { type: "playCard", cardId: "green-3" });
+    if (!r2.ok) throw new Error(r2.error);
+    const r3 = applyMove(r2.state, "p2", { type: "playCard", cardId: "green-9" });
+    if (!r3.ok) throw new Error(r3.error);
+
+    // p2 (green-9) wins despite being the 3rd seat — round 2 starts with p2, not p1 (seat+1)
+    expect(r3.state.round.roundNumber).toBe(2);
+    expect(r3.state.round.turnOrder).toEqual(["p2", "p0", "p1"]);
   });
 
   it("increments trickSequence for every trick within a round, not just the last one", () => {
