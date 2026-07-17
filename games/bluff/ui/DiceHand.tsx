@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Die3D, type Die3DFaceConfig } from "@/components/common/Die3D";
 import type { DieFace } from "../engine/types";
 
-const BLUFF_FACES: readonly Die3DFaceConfig[] = [
+export const BLUFF_FACES: readonly Die3DFaceConfig[] = [
   { key: "1", glyph: "1" },
   { key: "star", glyph: "★", special: true },
   { key: "2", glyph: "2" },
@@ -13,7 +13,7 @@ const BLUFF_FACES: readonly Die3DFaceConfig[] = [
   { key: "4", glyph: "4" },
 ];
 
-function faceIndexOf(face: DieFace): number {
+export function faceIndexOf(face: DieFace): number {
   const idx = BLUFF_FACES.findIndex((f) => f.key === String(face));
   return idx === -1 ? 0 : idx;
 }

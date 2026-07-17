@@ -80,7 +80,7 @@ export function BidControls({
           onClick={onChallenge}
           className="flex-1 rounded-lg bg-red-500 px-4 py-2 font-semibold text-white active:scale-95 disabled:opacity-30"
         >
-          도전!
+          블러프!
         </button>
       </div>
     </div>
