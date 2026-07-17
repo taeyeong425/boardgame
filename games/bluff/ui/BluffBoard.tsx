@@ -4,7 +4,7 @@ import { CumulativeScoreboard } from "@/components/common/CumulativeScoreboard";
 import { TurnOrderIndicator } from "@/components/common/TurnOrderIndicator";
 import type { GameComponentProps } from "../../gameComponentProps";
 import type { BluffClientState } from "../engine/clientView";
-import { BidControls } from "./BidControls";
+import { BidLadder } from "./BidLadder";
 import { BidProgressTrack } from "./BidProgressTrack";
 import { BidReferenceBoard } from "./BidReferenceBoard";
 import { DiceHand } from "./DiceHand";
@@ -58,15 +58,22 @@ export function BluffGame({ selfPlayerId, gameState, roomTotals, sendAction }: G
         <DiceHand dice={state.myDice} roundNumber={state.roundNumber} />
       </div>
 
-      <BidControls
-        // Remounts whenever the table bid actually changes, so its internal draft resets to a
-        // fresh suggestion without needing an effect to sync it.
-        key={state.currentBid ? `${state.currentBid.count}-${state.currentBid.face}` : "opening"}
+      <BidLadder
         currentBid={state.currentBid}
+        maxCount={Math.max(totalDiceRemaining, (state.currentBid?.count ?? 0) + 3)}
         playable={isMyTurn}
         onBid={(bid) => sendAction({ type: "placeBid", count: bid.count, face: bid.face })}
-        onChallenge={() => sendAction({ type: "challenge" })}
       />
+
+      {isMyTurn && state.currentBid !== null && (
+        <button
+          type="button"
+          onClick={() => sendAction({ type: "challenge" })}
+          className="rounded-lg bg-red-500 px-4 py-2 font-semibold text-white active:scale-95"
+        >
+          블러프!
+        </button>
+      )}
 
       <BidReferenceBoard />
 
