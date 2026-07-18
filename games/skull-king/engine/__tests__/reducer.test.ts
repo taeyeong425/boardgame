@@ -123,15 +123,15 @@ describe("applyMove — playCard", () => {
   });
 
   it("enforces follow-suit for numbered cards", () => {
-    const state = twoPlayerRound1({ p0: { kind: "number", id: "green-1", suit: "green", value: 1 }, p1: { kind: "number", id: "yellow-2", suit: "yellow", value: 2 } });
+    const state = twoPlayerRound1({ p0: { kind: "number", id: "red-1", suit: "red", value: 1 }, p1: { kind: "number", id: "yellow-2", suit: "yellow", value: 2 } });
     // give p1 a second card so the follow-suit check actually has a choice to reject
-    state.round.players.p1.hand.push({ kind: "number", id: "green-9", suit: "green", value: 9 });
+    state.round.players.p1.hand.push({ kind: "number", id: "red-9", suit: "red", value: 9 });
     const b1 = applyMove(state, "p0", { type: "bid", value: 1 });
     if (!b1.ok) throw new Error(b1.error);
     const b2 = applyMove(b1.state, "p1", { type: "bid", value: 1 });
     if (!b2.ok) throw new Error(b2.error);
-    // p0 leads green-1, p1 has a green card (green-9) so playing yellow-2 must be rejected
-    const lead = applyMove(b2.state, "p0", { type: "playCard", cardId: "green-1" });
+    // p0 leads red-1, p1 has a red card (red-9) so playing yellow-2 must be rejected
+    const lead = applyMove(b2.state, "p0", { type: "playCard", cardId: "red-1" });
     if (!lead.ok) throw new Error(lead.error);
     expect(applyMove(lead.state, "p1", { type: "playCard", cardId: "yellow-2" })).toEqual({
       ok: false,
@@ -141,15 +141,15 @@ describe("applyMove — playCard", () => {
 
   it("resolves the trick, tallies the round, and starts round 2 led by the trick's winner", () => {
     const state = biddedState(
-      { kind: "number", id: "green-9", suit: "green", value: 9 },
-      { kind: "number", id: "green-3", suit: "green", value: 3 },
+      { kind: "number", id: "red-9", suit: "red", value: 9 },
+      { kind: "number", id: "red-3", suit: "red", value: 3 },
       1,
       0
     );
-    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "green-9" });
+    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "red-9" });
     expect(p0Plays.ok).toBe(true);
     if (!p0Plays.ok) return;
-    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "green-3" });
+    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "red-3" });
     expect(p1Plays.ok).toBe(true);
     if (!p1Plays.ok) return;
 
@@ -186,9 +186,9 @@ describe("applyMove — playCard", () => {
         phase: "playing",
         turnIndex: 0,
         players: {
-          p0: { hand: [{ kind: "number", id: "green-5", suit: "green", value: 5 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
-          p1: { hand: [{ kind: "number", id: "green-3", suit: "green", value: 3 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
-          p2: { hand: [{ kind: "number", id: "green-9", suit: "green", value: 9 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
+          p0: { hand: [{ kind: "number", id: "red-5", suit: "red", value: 5 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
+          p1: { hand: [{ kind: "number", id: "red-3", suit: "red", value: 3 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
+          p2: { hand: [{ kind: "number", id: "red-9", suit: "red", value: 9 }], bid: 0, tricksWon: 0, bonusPoints: 0 },
         },
         completedTricks: [],
         currentTrick: { leaderId: "p0", plays: [], ledSuit: null },
@@ -201,43 +201,43 @@ describe("applyMove — playCard", () => {
       lastTrickReveal: null,
     };
 
-    const r1 = applyMove(state, "p0", { type: "playCard", cardId: "green-5" });
+    const r1 = applyMove(state, "p0", { type: "playCard", cardId: "red-5" });
     if (!r1.ok) throw new Error(r1.error);
-    const r2 = applyMove(r1.state, "p1", { type: "playCard", cardId: "green-3" });
+    const r2 = applyMove(r1.state, "p1", { type: "playCard", cardId: "red-3" });
     if (!r2.ok) throw new Error(r2.error);
-    const r3 = applyMove(r2.state, "p2", { type: "playCard", cardId: "green-9" });
+    const r3 = applyMove(r2.state, "p2", { type: "playCard", cardId: "red-9" });
     if (!r3.ok) throw new Error(r3.error);
 
-    // p2 (green-9) wins despite being the 3rd seat — round 2 starts with p2, not p1 (seat+1)
+    // p2 (red-9) wins despite being the 3rd seat — round 2 starts with p2, not p1 (seat+1)
     expect(r3.state.round.roundNumber).toBe(2);
     expect(r3.state.round.turnOrder).toEqual(["p2", "p0", "p1"]);
   });
 
   it("increments trickSequence for every trick within a round, not just the last one", () => {
-    const state = twoPlayerRound1({ p0: { kind: "number", id: "green-9", suit: "green", value: 9 }, p1: { kind: "number", id: "green-3", suit: "green", value: 3 } });
+    const state = twoPlayerRound1({ p0: { kind: "number", id: "red-9", suit: "red", value: 9 }, p1: { kind: "number", id: "red-3", suit: "red", value: 3 } });
     state.round.roundNumber = 2;
-    state.round.players.p0.hand.push({ kind: "number", id: "green-1", suit: "green", value: 1 });
-    state.round.players.p1.hand.push({ kind: "number", id: "green-2", suit: "green", value: 2 });
+    state.round.players.p0.hand.push({ kind: "number", id: "red-1", suit: "red", value: 1 });
+    state.round.players.p1.hand.push({ kind: "number", id: "red-2", suit: "red", value: 2 });
 
     const b1 = applyMove(state, "p0", { type: "bid", value: 1 });
     if (!b1.ok) throw new Error(b1.error);
     const b2 = applyMove(b1.state, "p1", { type: "bid", value: 1 });
     if (!b2.ok) throw new Error(b2.error);
 
-    const t1a = applyMove(b2.state, "p0", { type: "playCard", cardId: "green-9" });
+    const t1a = applyMove(b2.state, "p0", { type: "playCard", cardId: "red-9" });
     if (!t1a.ok) throw new Error(t1a.error);
-    const t1b = applyMove(t1a.state, "p1", { type: "playCard", cardId: "green-3" });
+    const t1b = applyMove(t1a.state, "p1", { type: "playCard", cardId: "red-3" });
     if (!t1b.ok) throw new Error(t1b.error);
     expect(t1b.state.trickSequence).toBe(1);
-    expect(t1b.state.lastTrickReveal?.trick.winnerId).toBe("p0"); // green 9 beats green 3
+    expect(t1b.state.lastTrickReveal?.trick.winnerId).toBe("p0"); // red 9 beats red 3
     expect(t1b.state.round.roundNumber).toBe(2); // round still in progress, not yet transitioned
 
-    const t2a = applyMove(t1b.state, "p0", { type: "playCard", cardId: "green-1" });
+    const t2a = applyMove(t1b.state, "p0", { type: "playCard", cardId: "red-1" });
     if (!t2a.ok) throw new Error(t2a.error);
-    const t2b = applyMove(t2a.state, "p1", { type: "playCard", cardId: "green-2" });
+    const t2b = applyMove(t2a.state, "p1", { type: "playCard", cardId: "red-2" });
     if (!t2b.ok) throw new Error(t2b.error);
     expect(t2b.state.trickSequence).toBe(2);
-    expect(t2b.state.lastTrickReveal?.trick.winnerId).toBe("p1"); // green 2 beats green 1
+    expect(t2b.state.lastTrickReveal?.trick.winnerId).toBe("p1"); // red 2 beats red 1
     expect(t2b.state.lastTrickReveal?.standings).toEqual([
       { playerId: "p0", bid: 1, tricksWon: 1 },
       { playerId: "p1", bid: 1, tricksWon: 1 },
@@ -248,14 +248,14 @@ describe("applyMove — playCard", () => {
 describe("computeResult", () => {
   it("reports cumulative scores with descending sort order", () => {
     const state = biddedState(
-      { kind: "number", id: "green-9", suit: "green", value: 9 },
-      { kind: "number", id: "green-3", suit: "green", value: 3 },
+      { kind: "number", id: "red-9", suit: "red", value: 9 },
+      { kind: "number", id: "red-3", suit: "red", value: 3 },
       1,
       0
     );
-    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "green-9" });
+    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "red-9" });
     if (!p0Plays.ok) throw new Error(p0Plays.error);
-    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "green-3" });
+    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "red-3" });
     if (!p1Plays.ok) throw new Error(p1Plays.error);
 
     const { rawScores, sortOrder, summary } = computeResult({ ...p1Plays.state, phase: "gameOver" });
@@ -267,17 +267,17 @@ describe("computeResult", () => {
 
 describe("getNextStartingPlayerId", () => {
   it("returns the winner of the most recent trick, even when that's not the score leader", () => {
-    // p0 wins the only trick (green-9 beats green-3) but both bid 0, so p0's missed bid (-10)
+    // p0 wins the only trick (red-9 beats red-3) but both bid 0, so p0's missed bid (-10)
     // actually scores worse than p1's correct zero-bid (+10) — score leader is p1, trick winner is p0.
     const state = biddedState(
-      { kind: "number", id: "green-9", suit: "green", value: 9 },
-      { kind: "number", id: "green-3", suit: "green", value: 3 },
+      { kind: "number", id: "red-9", suit: "red", value: 9 },
+      { kind: "number", id: "red-3", suit: "red", value: 3 },
       0,
       0
     );
-    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "green-9" });
+    const p0Plays = applyMove(state, "p0", { type: "playCard", cardId: "red-9" });
     if (!p0Plays.ok) throw new Error(p0Plays.error);
-    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "green-3" });
+    const p1Plays = applyMove(p0Plays.state, "p1", { type: "playCard", cardId: "red-3" });
     if (!p1Plays.ok) throw new Error(p1Plays.error);
 
     expect(p1Plays.state.cumulativeScores).toEqual({ p0: -10, p1: 10 });

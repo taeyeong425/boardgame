@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { legalCardIds, resolveTrick } from "../trick";
 import type { Card, TrickPlay } from "../types";
 
-function n(suit: "green" | "yellow" | "purple" | "black", value: number): Card {
+function n(suit: "red" | "yellow" | "blue" | "black", value: number): Card {
   return { kind: "number", id: `${suit}-${value}`, suit, value };
 }
 function pirate(id = "pirate-1"): Card {
@@ -26,12 +26,12 @@ function play(playerId: string, card: Card, declaredAs?: "pirate" | "escape"): T
 
 describe("resolveTrick", () => {
   it("highest card of the led suit wins when only colored cards are played", () => {
-    const plays = [play("p0", n("green", 7)), play("p1", n("green", 12)), play("p2", n("green", 8))];
-    expect(resolveTrick(plays, "green")).toEqual({ winnerId: "p1", bonusPoints: 0 });
+    const plays = [play("p0", n("red", 7)), play("p1", n("red", 12)), play("p2", n("red", 8))];
+    expect(resolveTrick(plays, "red")).toEqual({ winnerId: "p1", bonusPoints: 0 });
   });
 
   it("an off-suit colored card never wins, even with the highest number", () => {
-    const plays = [play("p0", n("yellow", 12)), play("p1", n("yellow", 5)), play("p2", n("yellow", 8)), play("p3", n("purple", 14))];
+    const plays = [play("p0", n("yellow", 12)), play("p1", n("yellow", 5)), play("p2", n("yellow", 8)), play("p3", n("blue", 14))];
     expect(resolveTrick(plays, "yellow").winnerId).toBe("p0");
   });
 
@@ -46,7 +46,7 @@ describe("resolveTrick", () => {
   });
 
   it("a pirate beats every numbered card including black", () => {
-    const plays = [play("p0", n("black", 14)), play("p1", pirate())];
+    const plays = [play("p0", n("black", 13)), play("p1", pirate())];
     expect(resolveTrick(plays, "black").winnerId).toBe("p1");
   });
 
@@ -82,8 +82,8 @@ describe("resolveTrick", () => {
   });
 
   it("escapes always lose to a real card", () => {
-    const plays = [play("p0", escape()), play("p1", n("green", 3))];
-    expect(resolveTrick(plays, "green").winnerId).toBe("p1");
+    const plays = [play("p0", escape()), play("p1", n("red", 3))];
+    expect(resolveTrick(plays, "red").winnerId).toBe("p1");
   });
 
   it("if every play is an escape, the first one wins", () => {
@@ -99,26 +99,26 @@ describe("resolveTrick", () => {
   });
 
   it("Tigress declared as an escape behaves like an escape", () => {
-    const plays = [play("p0", tigress(), "escape"), play("p1", n("green", 1))];
-    expect(resolveTrick(plays, "green").winnerId).toBe("p1");
+    const plays = [play("p0", tigress(), "escape"), play("p1", n("red", 1))];
+    expect(resolveTrick(plays, "red").winnerId).toBe("p1");
   });
 });
 
 describe("legalCardIds", () => {
   it("allows anything when no suit has been led yet", () => {
-    const hand: Card[] = [n("green", 3), pirate(), escape()];
-    expect(legalCardIds(hand, null).sort()).toEqual(["escape-1", "green-3", "pirate-1"].sort());
+    const hand: Card[] = [n("red", 3), pirate(), escape()];
+    expect(legalCardIds(hand, null).sort()).toEqual(["escape-1", "red-3", "pirate-1"].sort());
   });
 
   it("restricts numbered cards to the led suit when the player holds one, but always allows specials", () => {
-    const hand: Card[] = [n("green", 3), n("yellow", 9), pirate(), escape()];
-    const legal = legalCardIds(hand, "green").sort();
-    expect(legal).toEqual(["escape-1", "green-3", "pirate-1"].sort());
+    const hand: Card[] = [n("red", 3), n("yellow", 9), pirate(), escape()];
+    const legal = legalCardIds(hand, "red").sort();
+    expect(legal).toEqual(["escape-1", "red-3", "pirate-1"].sort());
     expect(legal).not.toContain("yellow-9");
   });
 
   it("allows any numbered card when the player has none of the led suit", () => {
-    const hand: Card[] = [n("yellow", 9), n("purple", 4)];
-    expect(legalCardIds(hand, "green").sort()).toEqual(["purple-4", "yellow-9"].sort());
+    const hand: Card[] = [n("yellow", 9), n("blue", 4)];
+    expect(legalCardIds(hand, "red").sort()).toEqual(["blue-4", "yellow-9"].sort());
   });
 });

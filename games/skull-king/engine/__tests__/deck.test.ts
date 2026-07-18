@@ -3,22 +3,22 @@ import { mulberry32 } from "../../../../shared/rng";
 import { buildFullDeck, dealRound } from "../deck";
 
 describe("buildFullDeck", () => {
-  it("has exactly 70 unique cards with the confirmed composition", () => {
+  it("has exactly 66 unique cards with the confirmed composition", () => {
     const deck = buildFullDeck();
-    expect(deck.length).toBe(70);
-    expect(new Set(deck.map((c) => c.id)).size).toBe(70);
+    expect(deck.length).toBe(66);
+    expect(new Set(deck.map((c) => c.id)).size).toBe(66);
 
     const byKind = (kind: string) => deck.filter((c) => c.kind === kind).length;
-    expect(byKind("number")).toBe(56); // 4 suits x 14
+    expect(byKind("number")).toBe(52); // 4 suits x 13
     expect(byKind("pirate")).toBe(5);
     expect(byKind("tigress")).toBe(1);
     expect(byKind("skullKing")).toBe(1);
     expect(byKind("mermaid")).toBe(2);
     expect(byKind("escape")).toBe(5);
 
-    for (const suit of ["green", "yellow", "purple", "black"] as const) {
+    for (const suit of ["red", "yellow", "blue", "black"] as const) {
       const values = deck.filter((c) => c.kind === "number" && c.suit === suit).map((c) => (c as { value: number }).value);
-      expect(values.sort((a, b) => a - b)).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
+      expect(values.sort((a, b) => a - b)).toEqual(Array.from({ length: 13 }, (_, i) => i + 1));
     }
   });
 });

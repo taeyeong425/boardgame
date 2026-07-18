@@ -29,7 +29,7 @@ const ENTRIES: { card: Card; title: string; body: string }[] = [
     body: "거의 항상 져요. 단, 이번 트릭에 낸 카드가 전부 탈출이면 가장 먼저 낸 사람이 이겨요.",
   },
   {
-    card: { kind: "number", id: "legend-black", suit: "black", value: 14 },
+    card: { kind: "number", id: "legend-black", suit: "black", value: 13 },
     title: "검은색 숫자카드",
     body: "다른 색 숫자 카드보다는 항상 이기지만, 해적·스컬킹·인어에게는 져요.",
   },

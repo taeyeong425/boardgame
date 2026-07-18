@@ -2,12 +2,12 @@ import type { Card, Suit } from "../engine/types";
 
 export function suitColorClass(suit: Suit): string {
   switch (suit) {
-    case "green":
-      return "bg-emerald-700 text-emerald-50 border-emerald-400";
+    case "red":
+      return "bg-red-700 text-red-50 border-red-400";
     case "yellow":
       return "bg-amber-500 text-amber-950 border-amber-300";
-    case "purple":
-      return "bg-purple-700 text-purple-50 border-purple-400";
+    case "blue":
+      return "bg-blue-700 text-blue-50 border-blue-400";
     case "black":
       return "bg-neutral-900 text-neutral-100 border-neutral-500";
   }
@@ -62,4 +62,34 @@ export function cardLabel(card: Card): string {
     case "escape":
       return "탈출";
   }
+}
+
+const SUIT_ORDER: Suit[] = ["red", "yellow", "blue", "black"];
+
+/** Display-order group: colored suits (low-to-high value) first, then black (also low-to-high),
+ * then the specials in a fixed sequence — per-player preference, not a strength/priority order
+ * (see docs/rules/skull-king.md for the actual trick-resolution priority). */
+function sortGroup(card: Card): number {
+  switch (card.kind) {
+    case "number":
+      return SUIT_ORDER.indexOf(card.suit);
+    case "tigress":
+      return 4;
+    case "mermaid":
+      return 5;
+    case "pirate":
+      return 6;
+    case "skullKing":
+      return 7;
+    case "escape":
+      return 8;
+  }
+}
+
+export function sortHand(hand: Card[]): Card[] {
+  return [...hand].sort((a, b) => {
+    const groupDiff = sortGroup(a) - sortGroup(b);
+    if (groupDiff !== 0) return groupDiff;
+    return a.kind === "number" && b.kind === "number" ? a.value - b.value : 0;
+  });
 }

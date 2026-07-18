@@ -1,5 +1,6 @@
 import type { Card } from "../engine/types";
 import { CardFace } from "./CardFace";
+import { sortHand } from "./cardDisplay";
 
 export function HandView({
   hand,
@@ -14,7 +15,7 @@ export function HandView({
 }) {
   return (
     <div className="flex flex-wrap justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2">
-      {hand.map((card) => {
+      {sortHand(hand).map((card) => {
         const legal = playable && legalIds.includes(card.id);
         return (
           <button

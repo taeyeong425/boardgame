@@ -14,24 +14,29 @@ that caps at 2-6 players, treats Mermaids as an expansion-only card, and uses di
 values (Mermaid-captures-Skull-King = +50, no Pirate-captures-Mermaid bonus at all, plus a
 capturing-a-14 bonus not used anywhere else). The current retail listing for the same product
 explicitly says **2-8 Players (Base Game)**, and BoardGameArena's implementation — by far the
-most-played digital version — includes Mermaids in the base 70-card deck with the 20/30/40 bonus
-scheme below. This doc follows the BGA/current-retail ruleset, not the legacy PDF.
+most-played digital version — includes Mermaids in the base deck with the 20/30/40 bonus scheme
+below. This doc follows the BGA/current-retail ruleset for player count and bonus scoring, not the
+legacy PDF.
+
+**Card composition correction**: the two sources above describe a 70-card deck (56 number cards,
+suits numbered 1-14). Cross-checked directly against a physical copy of the game, the actual deck
+is **66 cards** — each suit numbered **1-13** (52 number cards), not 1-14. The composition below
+reflects the physical copy, not the two web sources.
 
 ## Components
 
-- 70 cards: 4 suits (green, yellow, purple, **black/Jolly Roger**) numbered 1-14 each (56 cards),
-  plus 5 Pirates, 1 Tigress, 1 Skull King, 2 Mermaids, 5 Escapes (14 special cards).
+- 66 cards: 4 suits (red, yellow, blue, **black/Jolly Roger**) numbered 1-13 each (52 cards), plus
+  5 Pirates, 1 Tigress, 1 Skull King, 2 Mermaids, 5 Escapes (14 special cards).
 - No Kraken, White Whale, Loot, or other "Legendary Expansion" cards — base game only.
 
 ## Player count: 2-6, not the box's 2-8
 
-The retail box advertises 2-8 players, but the deck only has 70 cards and round 10 deals 10 cards
-to every player. At 7 players that's 70 cards exactly (works, but leaves nothing spare for the
-deal to ever misalign); at 8 players round 9 alone needs 72 cards and round 10 needs 80 — more
-than exist in the deck. No source found during research documents an official variant for how
-7-8 player games handle this (fewer rounds? smaller max hand? a second deck?), so rather than
-invent an unconfirmed house rule, this app caps Skull King at **6 players** (60 cards needed at
-round 10, safely under 70), matching the cap already used for Penguin Party and Bluff.
+The retail box advertises 2-8 players, but the deck only has 66 cards and round 10 deals 10 cards
+to every player. At 7 players, round 10 alone needs 70 cards — more than exist in the deck — and at
+8 players round 9 already needs 72. No source found during research documents an official variant
+for how 7-8 player games handle this (fewer rounds? smaller max hand? a second deck?), so rather
+than invent an unconfirmed house rule, this app caps Skull King at **6 players** (60 cards needed
+at round 10, safely under 66), matching the cap already used for Penguin Party and Bluff.
 
 ## Rounds
 
@@ -60,7 +65,7 @@ Priority, highest to lowest:
    every Pirate).
 3. **Pirate** (including the Tigress played as a Pirate) — beats every numbered card, including
    black/Jolly Roger. If multiple Pirates are played in one trick, the first one played wins.
-4. **Black (Jolly Roger) suit** — beats any colored (green/yellow/purple) numbered card regardless
+4. **Black (Jolly Roger) suit** — beats any colored (red/yellow/blue) numbered card regardless
    of value or which suit was led, but is otherwise just a numbered suit for follow-suit purposes
    (see below). Among black cards played in the same trick, the highest number wins.
 5. **Colored numbered card matching the led suit** — highest number of the suit that was led wins.

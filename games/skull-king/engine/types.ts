@@ -1,12 +1,12 @@
 export type PlayerId = string;
-export type Suit = "green" | "yellow" | "purple" | "black";
+export type Suit = "red" | "yellow" | "blue" | "black";
 export type TigressDeclaration = "pirate" | "escape";
 
 export interface NumberCard {
   kind: "number";
   id: string;
   suit: Suit;
-  value: number; // 1-14
+  value: number; // 1-13
 }
 export interface PirateCard {
   kind: "pirate";
