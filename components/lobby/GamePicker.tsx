@@ -17,7 +17,7 @@ export function GamePicker({
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">게임 선택</h2>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-4 gap-1.5">
         {GAME_CATALOG.map((g) => {
           const outOfRange = playerCount < g.minPlayers || playerCount > g.maxPlayers;
           const disabled = !isHost || !g.implemented || outOfRange;
@@ -28,13 +28,13 @@ export function GamePicker({
               type="button"
               disabled={disabled}
               onClick={() => onSelectGame(g.id)}
-              className={`rounded-lg border px-3 py-3 text-left text-sm ${
+              className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-2 text-center [word-break:keep-all] ${
                 selected ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
               } ${disabled ? "opacity-40" : "active:scale-95"}`}
             >
-              <p className="font-semibold">{g.displayName}</p>
-              <p className="text-xs text-white/50">
-                {g.implemented ? `${g.minPlayers}-${g.maxPlayers}인` : "곧 추가 예정"}
+              <p className="text-xs font-semibold leading-tight">{g.displayName}</p>
+              <p className="text-[10px] text-white/50">
+                {g.implemented ? `${g.minPlayers}-${g.maxPlayers}인` : "곧 추가"}
               </p>
             </button>
           );
