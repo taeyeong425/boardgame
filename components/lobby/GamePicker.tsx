@@ -6,6 +6,7 @@ const GAME_EMOJI: Record<GameId, string> = {
   "skull-king": "🏴‍☠️",
   bluff: "🎲",
   "las-vegas": "🎰",
+  dalmuti: "👑",
 };
 
 export function GamePicker({

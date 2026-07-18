@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { GameId } from "@/shared/types";
 import { BluffGame } from "./bluff/ui/BluffBoard";
+import { DalmutiGame } from "./dalmuti/ui/DalmutiBoard";
 import type { GameComponentProps } from "./gameComponentProps";
 import { LasVegasGame } from "./las-vegas/ui/LasVegasBoard";
 import { PenguinPartyGame } from "./penguin-party/ui/PenguinPartyBoard";
@@ -12,4 +13,5 @@ export const gameUiRegistry: Partial<Record<GameId, ComponentType<GameComponentP
   bluff: BluffGame,
   "las-vegas": LasVegasGame,
   "skull-king": SkullKingGame,
+  dalmuti: DalmutiGame,
 };

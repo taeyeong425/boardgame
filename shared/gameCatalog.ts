@@ -10,6 +10,7 @@ export const GAME_CATALOG: GameCatalogEntry[] = [
   { id: "skull-king", displayName: "스컬킹", minPlayers: 2, maxPlayers: 6, implemented: true },
   { id: "bluff", displayName: "블러프", minPlayers: 2, maxPlayers: 6, implemented: true },
   { id: "las-vegas", displayName: "라스베가스", minPlayers: 2, maxPlayers: 5, implemented: true },
+  { id: "dalmuti", displayName: "달무티", minPlayers: 4, maxPlayers: 6, implemented: true },
 ];
 
 export function getCatalogEntry(id: string): GameCatalogEntry | undefined {

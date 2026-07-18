@@ -1,4 +1,4 @@
-export type GameId = "penguin-party" | "skull-king" | "bluff" | "las-vegas";
+export type GameId = "penguin-party" | "skull-king" | "bluff" | "las-vegas" | "dalmuti";
 
 /**
  * "game-over" is a brief intermission between a game finishing and the results screen: the
