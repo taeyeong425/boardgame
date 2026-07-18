@@ -1,5 +1,8 @@
 import type { CardColor } from "../engine/types";
 
+/** Canonical display order, matched below in every color lookup — also used to group a hand by color. */
+export const CARD_COLOR_ORDER: CardColor[] = ["fire", "tree", "desert", "grape", "ice"];
+
 /** Color alone isn't accessible (red/green colorblindness) — every card also carries a themed icon. */
 export function cardColorClass(color: CardColor): string {
   switch (color) {

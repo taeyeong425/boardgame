@@ -18,10 +18,15 @@ export function faceIndexOf(face: DieFace): number {
   return idx === -1 ? 0 : idx;
 }
 
+/** Ascending 1→5, star (wild) last — matches engine/dice.ts's ALL_FACES order. */
+const FACE_SORT_ORDER: DieFace[] = [1, 2, 3, 4, 5, "star"];
+
 export function DiceHand({ dice, roundNumber, size = 36 }: { dice: DieFace[]; roundNumber: number; size?: number }) {
+  const sortedDice = [...dice].sort((a, b) => FACE_SORT_ORDER.indexOf(a) - FACE_SORT_ORDER.indexOf(b));
+
   return (
     <div className="flex flex-wrap justify-center gap-2 p-2">
-      {dice.map((face, i) => (
+      {sortedDice.map((face, i) => (
         // Keying on roundNumber remounts every die on a fresh roll, so each one tumbles again.
         <RollingDie key={`${roundNumber}-${i}`} face={face} size={size} />
       ))}

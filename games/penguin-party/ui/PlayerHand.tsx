@@ -2,6 +2,7 @@
 
 import type { Card } from "../engine/types";
 import { CardFace } from "./CardFace";
+import { CARD_COLOR_ORDER } from "./cardColor";
 
 export function PlayerHand({
   hand,
@@ -14,9 +15,15 @@ export function PlayerHand({
   playable: boolean;
   onSelectCard: (cardId: string) => void;
 }) {
+  // Grouped by color (fixed display order) so same-colored cards sit together and are easy to
+  // count at a glance — cards have no rank, so there's no ordering within a color group to keep.
+  const sortedHand = [...hand].sort(
+    (a, b) => CARD_COLOR_ORDER.indexOf(a.color) - CARD_COLOR_ORDER.indexOf(b.color)
+  );
+
   return (
     <div className="flex flex-wrap justify-center gap-1 p-2">
-      {hand.map((card) => (
+      {sortedHand.map((card) => (
         <button
           key={card.id}
           type="button"
