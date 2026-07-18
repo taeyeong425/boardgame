@@ -98,6 +98,10 @@ export function useRoomSocket({ code, nickname, intent }: UseRoomSocketOptions):
           return;
         case "error":
           setLastError({ code: data.code, message: data.message });
+          // NOT_FOUND means this room/player no longer exists — reconnecting would just hit the
+          // same error forever (partysocket auto-reconnects by default), hammering the Durable
+          // Object indefinitely from a single dead tab. Close explicitly to stop that loop.
+          if (data.code === "NOT_FOUND") socket.close();
           return;
         case "playerConnectionChanged":
           setPublicState((prev) => {
@@ -116,6 +120,9 @@ export function useRoomSocket({ code, nickname, intent }: UseRoomSocketOptions):
           // trying to rejoin a seat the host just removed.
           window.localStorage.removeItem(playerIdStorageKey(code));
           setKicked(true);
+          // The server already closed this socket; close it here too so partysocket's default
+          // auto-reconnect doesn't silently rejoin the kicked player as a brand-new participant.
+          socket.close();
           return;
       }
     });
