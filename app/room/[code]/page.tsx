@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { use, useState } from "react";
 import { GameShell } from "@/components/game-shell/GameShell";
 import { NicknameGate } from "@/components/lobby/NicknameGate";
@@ -21,9 +21,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
 function RoomConnected({ code, nickname, intent }: { code: string; nickname: string; intent: "create" | "join" }) {
   const room = useRoomSocket({ code, nickname, intent });
-  const router = useRouter();
   // Navigating away unmounts this component, whose effect cleanup closes the socket — the
   // server's onClose already marks the seat disconnected (keeping score/seat for reconnects),
-  // so there's no separate "leave" message needed, just leave the page.
-  return <GameShell code={code} room={room} onLeaveRoom={() => router.push("/")} />;
+  // so there's no separate "leave" message needed, just leave the page. Plain navigation (not
+  // router.push) for the same reason as CreateRoomForm/JoinRoomForm.
+  return <GameShell code={code} room={room} onLeaveRoom={() => (window.location.href = "/")} />;
 }

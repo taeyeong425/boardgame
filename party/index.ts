@@ -8,6 +8,7 @@ import { getGameModule } from "./games/registry";
 import { loadRoomState, saveRoomState } from "./room/persistence";
 import {
   createRoomState,
+  HOST_REASSIGN_GRACE_MS,
   orderedPlayers,
   promoteHostIfNeeded,
   toPublicRoomState,
@@ -85,12 +86,21 @@ export class BoardgameRoom {
     }
   }
 
-  private async scheduleTurnAlarm(deadline: number) {
-    await this.ctx.storage.setAlarm(deadline);
-  }
-
-  private async clearTurnAlarm() {
-    await this.ctx.storage.deleteAlarm();
+  /**
+   * A Durable Object has exactly one alarm slot, shared here between two independent concerns —
+   * turn timeouts and the host-reassignment grace period — so this always recomputes the
+   * earliest of whichever deadlines are currently pending rather than letting one clobber the
+   * other.
+   */
+  private async rescheduleAlarm(state: RoomState) {
+    const deadlines: number[] = [];
+    if (state.phase === "in-game" && state.turnDeadline !== null) deadlines.push(state.turnDeadline);
+    if (state.hostDisconnectedAt !== null) deadlines.push(state.hostDisconnectedAt + HOST_REASSIGN_GRACE_MS);
+    if (deadlines.length === 0) {
+      await this.ctx.storage.deleteAlarm();
+      return;
+    }
+    await this.ctx.storage.setAlarm(Math.min(...deadlines));
   }
 
   /**
@@ -135,12 +145,10 @@ export class BoardgameRoom {
         nextStartingPlayerId,
         startingPlayerDraw: null, // only ever relevant for the game that just started
       };
-      await this.clearTurnAlarm();
     } else {
-      const deadline = Date.now() + TURN_TIMEOUT_MS;
-      next = { ...next, turnDeadline: deadline };
-      await this.scheduleTurnAlarm(deadline);
+      next = { ...next, turnDeadline: Date.now() + TURN_TIMEOUT_MS };
     }
+    await this.rescheduleAlarm(next);
 
     return { state: next };
   }
@@ -211,17 +219,36 @@ export class BoardgameRoom {
 
   async alarm() {
     const state = await loadRoomState(this.ctx);
-    if (!state || state.phase !== "in-game" || !state.currentGameId || state.currentGameState === null) return;
-    const gameModule = getGameModule(state.currentGameId);
-    if (!gameModule) return;
-    const currentPlayerId = gameModule.getCurrentTurnPlayerId(state.currentGameState);
-    if (!currentPlayerId) return;
+    if (!state) return;
 
-    const move = gameModule.autoMove(state.currentGameState, currentPlayerId);
-    const { state: next } = await this.applyGameMove(state, currentPlayerId, move);
+    // One alarm slot serves two independent deadlines (see rescheduleAlarm) — check whichever
+    // one(s) actually elapsed, since either or both can be due at the same wakeup.
+    let next = state;
+    if (
+      next.phase === "in-game" &&
+      next.turnDeadline !== null &&
+      Date.now() >= next.turnDeadline &&
+      next.currentGameId &&
+      next.currentGameState !== null
+    ) {
+      const gameModule = getGameModule(next.currentGameId);
+      const currentPlayerId = gameModule?.getCurrentTurnPlayerId(next.currentGameState) ?? null;
+      if (gameModule && currentPlayerId) {
+        const { state: afterMove } = await this.applyGameMove(
+          next,
+          currentPlayerId,
+          gameModule.autoMove(next.currentGameState, currentPlayerId)
+        );
+        next = afterMove;
+      }
+    }
+
+    next = promoteHostIfNeeded(next);
+
     await saveRoomState(this.ctx, next);
     this.broadcastPublicState(next);
     this.broadcastGameViews(next);
+    await this.rescheduleAlarm(next);
   }
 
   private async handleJoin(ws: CfWebSocket, playerId: string, nickname: string) {
@@ -291,7 +318,13 @@ export class BoardgameRoom {
     if (!state || !state.players[cs.playerId]) return;
 
     let next = upsertPlayer(state, { ...state.players[cs.playerId], connected: false, connectionId: null });
-    next = promoteHostIfNeeded(next);
+    // Don't reassign host immediately — a page reload or brief wifi drop closes this socket for
+    // a moment; record when it happened and let promoteHostIfNeeded (run from the grace-period
+    // alarm, or from another player's own join/rejoin) decide once the grace window has passed.
+    if (cs.playerId === next.hostPlayerId && next.hostDisconnectedAt === null) {
+      next = { ...next, hostDisconnectedAt: Date.now() };
+    }
+    await this.rescheduleAlarm(next);
     await saveRoomState(this.ctx, next);
 
     this.broadcast({ type: "playerConnectionChanged", playerId: cs.playerId, connected: false });
@@ -349,15 +382,14 @@ export class BoardgameRoom {
     }
 
     const gameState = gameModule.createInitialState(players, startingPlayerId);
-    const deadline = Date.now() + TURN_TIMEOUT_MS;
     const next: RoomState = {
       ...state,
       phase: "in-game",
       currentGameState: gameState,
-      turnDeadline: deadline,
+      turnDeadline: Date.now() + TURN_TIMEOUT_MS,
       startingPlayerDraw,
     };
-    await this.scheduleTurnAlarm(deadline);
+    await this.rescheduleAlarm(next);
     await saveRoomState(this.ctx, next);
     this.broadcastPublicState(next);
     this.broadcastGameViews(next);
@@ -393,8 +425,8 @@ export class BoardgameRoom {
       send(ws, { type: "error", code: "INVALID_STATE", message: "No game to leave right now." });
       return;
     }
-    if (state.phase === "in-game") await this.clearTurnAlarm();
     const next: RoomState = { ...state, phase: "lobby", currentGameId: null, currentGameState: null, turnDeadline: null };
+    await this.rescheduleAlarm(next);
     await saveRoomState(this.ctx, next);
     this.broadcastPublicState(next);
   }

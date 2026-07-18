@@ -61,6 +61,12 @@ export interface RoomState {
    * ever non-null right as the very first game starts.
    */
   startingPlayerDraw: StartingDrawEntry[] | null;
+  /**
+   * epoch ms when the current host's connection dropped; null while they're connected. Host
+   * reassignment waits out HOST_REASSIGN_GRACE_MS from this timestamp before handing off, so a
+   * page reload or momentary wifi drop doesn't strip host status before they can reconnect.
+   */
+  hostDisconnectedAt: number | null;
 }
 
 export interface GameCatalogEntry {

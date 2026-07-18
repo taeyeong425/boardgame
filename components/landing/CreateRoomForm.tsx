@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { generateRoomCode } from "@/shared/roomCode";
 
@@ -9,7 +8,6 @@ export function CreateRoomForm() {
     typeof window !== "undefined" ? (window.localStorage.getItem("boardgame:lastNickname") ?? "") : ""
   );
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -21,7 +19,10 @@ export function CreateRoomForm() {
     window.localStorage.setItem("boardgame:lastNickname", trimmed);
     const code = generateRoomCode();
     const params = new URLSearchParams({ intent: "create", nickname: trimmed });
-    router.push(`/room/${code}?${params.toString()}`);
+    // A plain full-page navigation instead of router.push: there's no shared layout/state to
+    // preserve across this transition, and it skips the client-side RSC-fetch-then-fallback path
+    // that (on a flaky connection) can fail and land on the browser's own network-error page.
+    window.location.href = `/room/${code}?${params.toString()}`;
   }
 
   return (

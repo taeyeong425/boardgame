@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { isValidRoomCode, normalizeRoomCode } from "@/shared/roomCode";
 
@@ -10,7 +9,6 @@ export function JoinRoomForm() {
     typeof window !== "undefined" ? (window.localStorage.getItem("boardgame:lastNickname") ?? "") : ""
   );
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   function handleJoin(e: FormEvent) {
     e.preventDefault();
@@ -26,7 +24,8 @@ export function JoinRoomForm() {
     }
     window.localStorage.setItem("boardgame:lastNickname", trimmed);
     const params = new URLSearchParams({ nickname: trimmed });
-    router.push(`/room/${normalized}?${params.toString()}`);
+    // Plain full-page navigation — see CreateRoomForm for why this replaces router.push.
+    window.location.href = `/room/${normalized}?${params.toString()}`;
   }
 
   return (
