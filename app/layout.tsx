@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,6 +15,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "남천동 킹드게임",
   description: "친구들과 모바일로 함께하는 보드게임 허브",
+  // Keeps the in-page/tab title Korean while the name used when saving to a home screen (iOS
+  // reads apple-mobile-web-app-title; Android/desktop PWA installs read manifest.name) is the
+  // English brand name.
+  appleWebApp: {
+    title: "Kingdgame",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({
