@@ -56,7 +56,7 @@ export function CopyRoomCodeButton({ code }: { code: string }) {
       type="button"
       onClick={handleClick}
       aria-label="방 코드 복사"
-      className="rounded-full border border-white/20 p-2 text-white/60 active:scale-95"
+      className="p-2 text-white/60 active:scale-95"
     >
       {copied ? <CheckIcon /> : <CopyIcon />}
     </button>
