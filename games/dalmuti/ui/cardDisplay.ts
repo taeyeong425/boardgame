@@ -23,11 +23,30 @@ export function cardGlyph(card: Card): string {
   return card.kind === "joker" ? "🃏" : String(card.value);
 }
 
-/** No suit dimension here — every number card shares one look; the joker gets the same
- * "wildcard" amber treatment already used for Skull King's Tigress. */
+/**
+ * Gradient from richly saturated (1, best/달무티) to pale (12, worst/농노) — reinforces "lower
+ * number = higher rank" at a glance, without a second suit dimension. Spelled out as literal
+ * class strings (not built from a template) so Tailwind's static scanner picks up every shade.
+ */
+const NUMBER_COLOR_CLASSES: string[] = [
+  "bg-indigo-950 text-indigo-50 border-indigo-700", // 1
+  "bg-indigo-900 text-indigo-50 border-indigo-600", // 2
+  "bg-indigo-800 text-indigo-50 border-indigo-500", // 3
+  "bg-indigo-700 text-indigo-50 border-indigo-400", // 4
+  "bg-indigo-600 text-indigo-50 border-indigo-300", // 5
+  "bg-indigo-500 text-white border-indigo-300", // 6
+  "bg-indigo-400 text-indigo-950 border-indigo-200", // 7
+  "bg-indigo-300 text-indigo-950 border-indigo-200", // 8
+  "bg-indigo-200 text-indigo-950 border-indigo-100", // 9
+  "bg-indigo-100 text-indigo-950 border-indigo-200", // 10
+  "bg-indigo-50 text-indigo-950 border-indigo-200", // 11
+  "bg-white text-indigo-900 border-indigo-200", // 12
+];
+
+/** The joker gets the same "wildcard" amber treatment already used for Skull King's Tigress. */
 export function cardColorClass(card: Card): string {
   if (card.kind === "joker") return "bg-amber-500 text-amber-950 border-amber-300";
-  return "bg-indigo-700 text-indigo-50 border-indigo-400";
+  return NUMBER_COLOR_CLASSES[card.value - 1];
 }
 
 /** Ascending by value (best/lowest first), jokers last — same sort convention already shipped
