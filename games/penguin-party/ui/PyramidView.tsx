@@ -53,7 +53,7 @@ export function PyramidView({
   const height = (bounds.maxY - bounds.minY) * CELL_HEIGHT;
 
   return (
-    <div className="w-full overflow-auto rounded-xl bg-slate-800/40 p-4">
+    <div className="w-full overflow-auto rounded-lg bg-slate-800/40 p-4">
       <div className="relative mx-auto" style={{ width, height }}>
         {occupied.map(({ position, card }) => {
           const u = unitsFor(position);

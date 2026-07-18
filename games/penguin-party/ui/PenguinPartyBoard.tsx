@@ -9,7 +9,7 @@ import type { PyramidPosition } from "../engine/types";
 import { OpponentStrip } from "./OpponentStrip";
 import { PlayerHand } from "./PlayerHand";
 import { PyramidView } from "./PyramidView";
-import { RoundResultOverlay } from "./RoundResultOverlay";
+import { RoundResultBanner } from "./RoundResultBanner";
 import { RulesPanel } from "./RulesPanel";
 import { cardColorLabel } from "./cardColor";
 
@@ -44,7 +44,7 @@ export function PenguinPartyGame({ selfPlayerId, gameState, roomTotals, sendActi
 
   return (
     <div className="relative flex flex-col gap-3">
-      <RoundResultOverlay summary={state.lastRoundSummary} playerNames={playerNames} />
+      <RoundResultBanner summary={state.lastRoundSummary} playerNames={playerNames} />
 
       <RulesPanel />
 

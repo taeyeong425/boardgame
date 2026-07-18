@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { RoundSummary } from "../engine/types";
 
-export function RoundResultOverlay({
+export function RoundResultBanner({
   summary,
   playerNames,
 }: {
@@ -13,10 +13,10 @@ export function RoundResultOverlay({
   if (!summary) return null;
   // Keying on roundNumber remounts this on every new round, so "visible" naturally resets to
   // true per round without needing to setState in response to a prop change.
-  return <RoundResultOverlayInner key={summary.roundNumber} summary={summary} playerNames={playerNames} />;
+  return <RoundResultBannerInner key={summary.roundNumber} summary={summary} playerNames={playerNames} />;
 }
 
-function RoundResultOverlayInner({ summary, playerNames }: { summary: RoundSummary; playerNames: Record<string, string> }) {
+function RoundResultBannerInner({ summary, playerNames }: { summary: RoundSummary; playerNames: Record<string, string> }) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {

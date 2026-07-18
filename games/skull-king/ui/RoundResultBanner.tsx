@@ -17,14 +17,14 @@ export function RoundResultBanner({
 function RoundResultBannerInner({ result, playerNames }: { result: RoundScoreEntry; playerNames: Record<string, string> }) {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(false), 8000);
+    const timer = setTimeout(() => setVisible(false), 4000);
     return () => clearTimeout(timer);
   }, []);
   if (!visible) return null;
 
   return (
     <div
-      className="absolute inset-x-4 top-2 z-10 max-h-[70vh] overflow-y-auto rounded-lg bg-black/90 p-3 text-sm text-white shadow-lg"
+      className="absolute inset-x-4 top-2 z-10 max-h-[70vh] overflow-y-auto rounded-lg bg-black/85 p-3 text-sm text-white shadow-lg"
       onClick={() => setVisible(false)}
     >
       <p className="mb-2 font-semibold">{result.roundNumber}라운드 정산</p>

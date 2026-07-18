@@ -36,14 +36,10 @@ export function PlayerOrderStrip({
             <div
               key={id}
               className={`flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2 text-xs ${
-                isCurrent
-                  ? "border-emerald-400 bg-emerald-400/10"
-                  : isSelf
-                    ? "border-sky-400/50 bg-sky-400/5"
-                    : "border-white/10"
+                isCurrent ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
               } ${eliminated ? "opacity-50" : ""}`}
             >
-              <span className="text-[9px] text-white/40">{i + 1}번</span>
+              <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
               <span className="truncate font-semibold">{isSelf ? "나" : (playerNames[id] ?? "?")}</span>
               <span className="text-lg">🎲</span>
               <span className="text-white/70">{eliminated ? "탈락" : `${diceCount}개`}</span>

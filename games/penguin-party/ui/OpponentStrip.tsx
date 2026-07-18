@@ -28,7 +28,7 @@ function StripCard({
         highlighted ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
       } ${eliminated ? "opacity-50" : ""}`}
     >
-      <span className="text-[9px] text-white/40">{seatNumber}번</span>
+      <span className="text-[10px] font-bold text-white/40">{seatNumber}번</span>
       <span className="truncate font-semibold">{label}</span>
       <div className="flex h-9 w-6 items-center justify-center">
         {eliminated || emptiedHand ? (

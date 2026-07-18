@@ -29,7 +29,7 @@ export function OpponentStatusStrip({
                 selfPlayerId === currentTurnPlayerId ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
               }`}
             >
-              <span className="text-[9px] text-white/40">{i + 1}번</span>
+              <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
               <span className="truncate font-semibold">나</span>
               <span className="text-white/70">🎲 {self.diceRemaining}</span>
               <span className="text-white/40">💵 {self.billCount}장</span>
@@ -45,7 +45,7 @@ export function OpponentStatusStrip({
               o.playerId === currentTurnPlayerId ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
             }`}
           >
-            <span className="text-[9px] text-white/40">{i + 1}번</span>
+            <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
             <span className="truncate font-semibold">{o.nickname}</span>
             <span className="text-white/70">🎲 {o.diceRemaining}</span>
             <span className="text-white/40">💵 {o.billCount}장</span>

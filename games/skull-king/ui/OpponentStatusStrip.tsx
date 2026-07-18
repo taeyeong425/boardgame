@@ -44,7 +44,7 @@ export function OpponentStatusStrip({
                   : "border-white/10"
               }`}
             >
-              <span className="text-[9px] text-white/40">{i + 1}번</span>
+              <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
               <span className="truncate font-semibold">나</span>
               <span className="text-white/70">🂠 {self.handCount}장</span>
               <span className="text-white/70">🏆 {self.tricksWon}트릭</span>
@@ -63,7 +63,7 @@ export function OpponentStatusStrip({
                 : "border-white/10"
             }`}
           >
-            <span className="text-[9px] text-white/40">{i + 1}번</span>
+            <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
             <span className="truncate font-semibold">{o.nickname}</span>
             <span className="text-white/70">🂠 {o.handCount}장</span>
             <span className="text-white/70">🏆 {o.tricksWon}트릭</span>

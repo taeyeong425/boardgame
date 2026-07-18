@@ -42,7 +42,7 @@ export function RoundResultBanner({
 function RoundResultBannerInner({ result, nicknames }: { result: RoundResult; nicknames: Record<string, string> }) {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(false), 9000);
+    const timer = setTimeout(() => setVisible(false), 4000);
     return () => clearTimeout(timer);
   }, []);
   if (!visible) return null;
