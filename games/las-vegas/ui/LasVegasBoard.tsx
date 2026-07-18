@@ -57,7 +57,7 @@ export function LasVegasGame({ selfPlayerId, gameState, roomTotals, sendAction }
       <OpponentStatusStrip
         opponents={state.opponents}
         currentTurnPlayerId={state.currentTurnPlayerId}
-        self={{ diceRemaining: state.myDiceRemaining, billCount: state.myBills.length }}
+        self={{ diceRemaining: state.myDiceRemaining }}
         turnOrder={state.turnOrder}
         selfPlayerId={selfPlayerId}
       />

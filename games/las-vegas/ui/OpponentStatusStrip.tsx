@@ -2,7 +2,6 @@ import type { OpponentDiceStatus } from "../engine/clientView";
 
 export interface SelfDiceBillStatus {
   diceRemaining: number;
-  billCount: number;
 }
 
 export function OpponentStatusStrip({
@@ -32,7 +31,6 @@ export function OpponentStatusStrip({
               <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
               <span className="truncate font-semibold">나</span>
               <span className="text-white/70">🎲 {self.diceRemaining}</span>
-              <span className="text-white/40">💵 {self.billCount}장</span>
             </div>
           );
         }
@@ -48,7 +46,6 @@ export function OpponentStatusStrip({
             <span className="text-[10px] font-bold text-white/40">{i + 1}번</span>
             <span className="truncate font-semibold">{o.nickname}</span>
             <span className="text-white/70">🎲 {o.diceRemaining}</span>
-            <span className="text-white/40">💵 {o.billCount}장</span>
           </div>
         );
       })}
