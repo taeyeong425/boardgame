@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyRoomCodeButton } from "@/components/common/CopyRoomCodeButton";
 import { NicknameEditButton } from "@/components/common/NicknameEditButton";
 import type { ConnectionStatus } from "@/hooks/useRoomSocket";
 import type { ClientMessage, PublicRoomState } from "@/shared/messages";
@@ -45,7 +46,10 @@ export function LobbyScreen({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-white/50">방 코드 (친구에게 공유하세요)</p>
-          <p className="text-4xl font-bold tracking-widest">{code}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-4xl font-bold tracking-widest">{code}</p>
+            <CopyRoomCodeButton code={code} />
+          </div>
           {status !== "open" && <p className="mt-1 text-xs text-amber-400">연결 상태: {status}</p>}
           {lastError && <p className="mt-1 text-xs text-red-400">{lastError.message}</p>}
         </div>
