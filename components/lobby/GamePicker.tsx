@@ -1,6 +1,13 @@
 import { GAME_CATALOG } from "@/shared/gameCatalog";
 import type { GameId } from "@/shared/types";
 
+const GAME_EMOJI: Record<GameId, string> = {
+  "penguin-party": "🐧",
+  "skull-king": "🏴‍☠️",
+  bluff: "🎲",
+  "las-vegas": "🎰",
+};
+
 export function GamePicker({
   isHost,
   playerCount,
@@ -32,7 +39,9 @@ export function GamePicker({
                 selected ? "border-emerald-400 bg-emerald-400/10" : "border-white/10"
               } ${disabled ? "opacity-40" : "active:scale-95"}`}
             >
-              <p className="font-semibold">{g.displayName}</p>
+              <p className="font-semibold">
+                {GAME_EMOJI[g.id]} {g.displayName}
+              </p>
               <p className="text-xs text-white/50">
                 {g.implemented ? `${g.minPlayers}-${g.maxPlayers}인` : "곧 추가 예정"}
               </p>
