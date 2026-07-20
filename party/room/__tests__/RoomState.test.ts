@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Player, RoomState } from "../../../shared/types";
-import { createRoomState, HOST_REASSIGN_GRACE_MS, promoteHostIfNeeded } from "../RoomState";
+import { createRoomState, HOST_REASSIGN_GRACE_MS, promoteHostIfNeeded, refreshEmptyRoomSince } from "../RoomState";
 
 function player(overrides: Partial<Player> & Pick<Player, "id" | "joinedAt" | "connected">): Player {
   return { nickname: overrides.id, connectionId: null, isHost: false, ...overrides };
@@ -60,11 +60,45 @@ describe("promoteHostIfNeeded", () => {
     expect(next.players.host.isHost).toBe(false);
   });
 
-  it("leaves state untouched if nobody is connected to promote, even past the grace window", () => {
+  it("gives up and clears hostDisconnectedAt if nobody is connected to promote, past the grace window", () => {
     const state = stateWith([player({ id: "host", joinedAt: 0, connected: false })], {
       hostDisconnectedAt: Date.now() - HOST_REASSIGN_GRACE_MS - 1,
     });
     const next = promoteHostIfNeeded(state);
-    expect(next).toBe(state);
+    expect(next.hostPlayerId).toBe("host");
+    expect(next.hostDisconnectedAt).toBeNull();
+  });
+
+  it("is a no-op the second time nobody is connected to promote (hostDisconnectedAt already null)", () => {
+    // Regression test: rescheduleAlarm must be able to reach deadlines.length === 0 and stop
+    // re-arming the alarm once nobody's left to promote — this only holds if promoteHostIfNeeded
+    // reaches a fixed point instead of forever handing back a fresh object.
+    const state = stateWith([player({ id: "host", joinedAt: 0, connected: false })], { hostDisconnectedAt: null });
+    expect(promoteHostIfNeeded(state)).toBe(state);
+  });
+});
+
+describe("refreshEmptyRoomSince", () => {
+  it("stamps emptyRoomSince once the last connected player disconnects", () => {
+    const state = stateWith([player({ id: "host", joinedAt: 0, connected: false })], { emptyRoomSince: null });
+    const next = refreshEmptyRoomSince(state);
+    expect(next.emptyRoomSince).not.toBeNull();
+  });
+
+  it("is a no-op while at least one player is connected", () => {
+    const state = stateWith([player({ id: "host", joinedAt: 0, connected: true })], { emptyRoomSince: null });
+    expect(refreshEmptyRoomSince(state)).toBe(state);
+  });
+
+  it("clears emptyRoomSince once someone reconnects", () => {
+    const state = stateWith([player({ id: "host", joinedAt: 0, connected: true })], { emptyRoomSince: Date.now() });
+    const next = refreshEmptyRoomSince(state);
+    expect(next.emptyRoomSince).toBeNull();
+  });
+
+  it("is a no-op if the room is already marked empty", () => {
+    const since = Date.now() - 1000;
+    const state = stateWith([player({ id: "host", joinedAt: 0, connected: false })], { emptyRoomSince: since });
+    expect(refreshEmptyRoomSince(state)).toBe(state);
   });
 });

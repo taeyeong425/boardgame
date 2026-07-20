@@ -17,6 +17,14 @@ game — the room/session mechanics every game plugs into. See `party/games/type
   (the "방 나가기" button) does the same thing client-side (closes the socket and navigates
   home); there's no separate "permanent leave" — the seat/score simply sits there until the room
   is abandoned.
+- There's no explicit "close room" action either, so an abandoned room (zero connected players)
+  self-destructs: `RoomState.emptyRoomSince` is stamped the moment the last player disconnects
+  (`refreshEmptyRoomSince`, `party/room/RoomState.ts`), and a Durable Object alarm wipes the
+  room's storage (`ctx.storage.deleteAll()`) once it's stayed empty for `EMPTY_ROOM_EXPIRY_MS`
+  (1 minute) with nobody having reconnected — see `alarm()` in `party/index.ts`. Rejoining that
+  room code afterward just hits the normal "room doesn't exist" path. This also closes off a
+  previous bug where a host-reassignment alarm with nobody left to promote kept re-arming itself
+  against an already-elapsed deadline forever, one Durable Object write per tick, 24/7.
 
 ## Room phases (`shared/types.ts` `RoomPhase`)
 
