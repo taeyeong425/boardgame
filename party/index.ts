@@ -263,6 +263,11 @@ export class BoardgameRoom {
     }
 
     next = promoteHostIfNeeded(next);
+    // Opportunistically recompute here too (not just on connect/disconnect) so a room already
+    // sitting with nobody connected before this deploy — e.g. one caught in the old runaway-alarm
+    // bug — still gets an emptyRoomSince stamp and expires on its own, instead of just going
+    // quiet forever waiting for a connect/disconnect event that may never come.
+    next = refreshEmptyRoomSince(next);
 
     await saveRoomState(this.ctx, next);
     this.broadcastPublicState(next);
