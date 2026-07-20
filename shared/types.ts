@@ -67,6 +67,13 @@ export interface RoomState {
    * page reload or momentary wifi drop doesn't strip host status before they can reconnect.
    */
   hostDisconnectedAt: number | null;
+  /**
+   * epoch ms when the last connected player disconnected, leaving the room fully empty; null
+   * whenever at least one player is connected. There's no explicit "close room" action, so this
+   * is what lets an abandoned room's Durable Object eventually delete its own state and alarm
+   * instead of sitting around (or, worse, re-arming its alarm) forever.
+   */
+  emptyRoomSince: number | null;
 }
 
 export interface GameCatalogEntry {

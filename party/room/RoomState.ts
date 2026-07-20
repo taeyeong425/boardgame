@@ -4,6 +4,9 @@ import type { Player, RoomState } from "../../shared/types";
 /** How long a disconnected host has to reconnect before someone else is promoted in their place. */
 export const HOST_REASSIGN_GRACE_MS = 8_000;
 
+/** How long a room can sit with zero connected players before its Durable Object deletes it. */
+export const EMPTY_ROOM_EXPIRY_MS = 60_000;
+
 export function createRoomState(code: string, hostPlayer: Player): RoomState {
   return {
     code,
@@ -19,7 +22,24 @@ export function createRoomState(code: string, hostPlayer: Player): RoomState {
     nextStartingPlayerId: null, // first game in a fresh room draws for it (no prior winner yet)
     startingPlayerDraw: null,
     hostDisconnectedAt: null,
+    emptyRoomSince: null,
   };
+}
+
+export function anyoneConnected(state: RoomState): boolean {
+  return Object.values(state.players).some((p) => p.connected);
+}
+
+/**
+ * Call after any connect/disconnect so `emptyRoomSince` always reflects the current roster:
+ * set the moment the room goes from having someone connected to having nobody, cleared the
+ * moment anyone reconnects.
+ */
+export function refreshEmptyRoomSince(state: RoomState): RoomState {
+  if (anyoneConnected(state)) {
+    return state.emptyRoomSince === null ? state : { ...state, emptyRoomSince: null };
+  }
+  return state.emptyRoomSince === null ? { ...state, emptyRoomSince: Date.now() } : state;
 }
 
 /** Strips the (possibly hidden-info-bearing) currentGameState before a room-wide broadcast. */
@@ -54,7 +74,13 @@ export function promoteHostIfNeeded(state: RoomState): RoomState {
     return state;
   }
   const next = orderedPlayers(state).find((p) => p.connected);
-  if (!next) return state; // nobody connected right now; leave as-is until someone reconnects
+  if (!next) {
+    // Nobody connected right now to hand host off to. Give up on this grace-period timer rather
+    // than leaving hostDisconnectedAt pointing at an ever-more-stale past timestamp — otherwise
+    // rescheduleAlarm keeps recomputing an already-elapsed deadline and the alarm re-fires
+    // immediately forever. The next join/rejoin calls this again and re-evaluates from scratch.
+    return state.hostDisconnectedAt === null ? state : { ...state, hostDisconnectedAt: null };
+  }
   return { ...withHost(state, next.id), hostDisconnectedAt: null };
 }
 

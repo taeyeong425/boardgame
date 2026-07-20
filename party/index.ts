@@ -7,10 +7,13 @@ import type { GameId, Player, RoomState, StartingDrawEntry } from "../shared/typ
 import { getGameModule } from "./games/registry";
 import { loadRoomState, saveRoomState } from "./room/persistence";
 import {
+  anyoneConnected,
   createRoomState,
+  EMPTY_ROOM_EXPIRY_MS,
   HOST_REASSIGN_GRACE_MS,
   orderedPlayers,
   promoteHostIfNeeded,
+  refreshEmptyRoomSince,
   toPublicRoomState,
   upsertPlayer,
   withHost,
@@ -96,6 +99,7 @@ export class BoardgameRoom {
     const deadlines: number[] = [];
     if (state.phase === "in-game" && state.turnDeadline !== null) deadlines.push(state.turnDeadline);
     if (state.hostDisconnectedAt !== null) deadlines.push(state.hostDisconnectedAt + HOST_REASSIGN_GRACE_MS);
+    if (state.emptyRoomSince !== null) deadlines.push(state.emptyRoomSince + EMPTY_ROOM_EXPIRY_MS);
     if (deadlines.length === 0) {
       await this.ctx.storage.deleteAlarm();
       return;
@@ -221,8 +225,23 @@ export class BoardgameRoom {
     const state = await loadRoomState(this.ctx);
     if (!state) return;
 
-    // One alarm slot serves two independent deadlines (see rescheduleAlarm) — check whichever
-    // one(s) actually elapsed, since either or both can be due at the same wakeup.
+    // A room that's been empty past EMPTY_ROOM_EXPIRY_MS is abandoned for good — there's no
+    // explicit "close room" action, so this is the only thing that ever reclaims it. Wipe storage
+    // and explicitly cancel the alarm too (deleteAll() only implies this on newer compatibility
+    // dates) and skip every other deadline: nobody's connected to receive a broadcast anyway, and
+    // reviving a deleted room on the next join is just the normal "room doesn't exist" path.
+    if (
+      state.emptyRoomSince !== null &&
+      Date.now() >= state.emptyRoomSince + EMPTY_ROOM_EXPIRY_MS &&
+      !anyoneConnected(state)
+    ) {
+      await this.ctx.storage.deleteAll();
+      await this.ctx.storage.deleteAlarm();
+      return;
+    }
+
+    // One alarm slot serves multiple independent deadlines (see rescheduleAlarm) — check
+    // whichever one(s) actually elapsed, since more than one can be due at the same wakeup.
     let next = state;
     if (
       next.phase === "in-game" &&
@@ -244,6 +263,11 @@ export class BoardgameRoom {
     }
 
     next = promoteHostIfNeeded(next);
+    // Opportunistically recompute here too (not just on connect/disconnect) so a room already
+    // sitting with nobody connected before this deploy — e.g. one caught in the old runaway-alarm
+    // bug — still gets an emptyRoomSince stamp and expires on its own, instead of just going
+    // quiet forever waiting for a connect/disconnect event that may never come.
+    next = refreshEmptyRoomSince(next);
 
     await saveRoomState(this.ctx, next);
     this.broadcastPublicState(next);
@@ -279,8 +303,10 @@ export class BoardgameRoom {
       state = upsertPlayer(state, player);
       state = promoteHostIfNeeded(state);
     }
+    state = refreshEmptyRoomSince(state);
 
     setConnState(ws, { ...cs, playerId });
+    await this.rescheduleAlarm(state);
     await saveRoomState(this.ctx, state);
     this.broadcastPublicState(state);
     this.broadcastGameViews(state);
@@ -295,8 +321,10 @@ export class BoardgameRoom {
     }
     let next = upsertPlayer(state, { ...state.players[playerId], connectionId: cs?.connId ?? null, connected: true });
     next = promoteHostIfNeeded(next);
+    next = refreshEmptyRoomSince(next);
 
     if (cs) setConnState(ws, { ...cs, playerId, intent: "join" });
+    await this.rescheduleAlarm(next);
     await saveRoomState(this.ctx, next);
 
     send(ws, { type: "roomState", state: toPublicRoomState(next) });
@@ -324,6 +352,7 @@ export class BoardgameRoom {
     if (cs.playerId === next.hostPlayerId && next.hostDisconnectedAt === null) {
       next = { ...next, hostDisconnectedAt: Date.now() };
     }
+    next = refreshEmptyRoomSince(next);
     await this.rescheduleAlarm(next);
     await saveRoomState(this.ctx, next);
 
